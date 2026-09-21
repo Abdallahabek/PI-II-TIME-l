@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nova Demanda - Development Demand Tracker</title>
+    <title>Nova Demanda - Acompanhamento de Demandas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <div class="wrapper">
@@ -15,16 +15,16 @@
         <div class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">DT</div>
-                <span style="font-size: 0.9rem; line-height: 1.1;">Development Demand<br>Tracking System</span>
+                <span style="font-size: 0.9rem; line-height: 1.1;">Sistema de Acompanhamento<br>de Demandas</span>
             </div>
             <div class="mt-3">
-                <a href="dashboard.html" class="nav-link">
-                    <i class="fa-solid fa-border-all"></i> Dashboard
+                <a href="Dashbord.html" class="nav-link">
+                    <i class="fa-solid fa-border-all"></i> Painel
                 </a>
-                <a href="demandas.html" class="nav-link active">
+                <a href="Front_telademanda.html" class="nav-link active">
                     <i class="fa-regular fa-clipboard"></i> Demandas
                 </a>
-                <a href="#" class="nav-link">
+                <a href="Configuracoes.html" class="nav-link">
                     <i class="fa-solid fa-gear"></i> Configurações
                 </a>
             </div>
@@ -39,57 +39,64 @@
                 </div>
             </div>
             <div class="p-4">
+                <div class="mb-3">
+                    <a href="Front_telademanda.html" class="text-decoration-none text-muted">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Voltar para Demandas
+                    </a>
+                </div>
                 <div class="card card-custom p-4">
                     <h4 class="mb-4 text-dark fw-normal">Nova Demanda</h4>
                     
-                    <form action="demandas.html" method="GET">
+                    <form action="Front_telademanda.html" method="GET" novalidate>
                         <div class="mb-3">
                             <label class="form-label text-muted">Título da Demanda</label>
-                            <input type="text" class="form-control" placeholder="Ex: Ajuste no fluxo de login">
+                            <input type="text" class="form-control" id="titulo" placeholder="Ex: Ajuste no fluxo de login" required>
                         </div>
                         <div class="row mb-3">
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Solicitante</label>
-                                <select class="form-select">
-                                    <option>João Silva</option>
-                                    <option>Maria Costa</option>
+                                <select class="form-select" id="solicitante" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="João Silva">João Silva</option>
+                                    <option value="Maria Costa">Maria Costa</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Tipo de Demanda</label>
                                 <div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo" id="bug" checked>
-                                        <label class="form-check-label" for="bug">Bug</label>
+                                        <input class="form-check-input" type="radio" name="tipo" id="defeito" value="Defeito" checked required>
+                                        <label class="form-check-label" for="defeito">Defeito</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo" id="feature">
-                                        <label class="form-check-label" for="feature">Feature</label>
+                                        <input class="form-check-input" type="radio" name="tipo" id="tarefa" value="Tarefa">
+                                        <label class="form-check-label" for="tarefa">Tarefa</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="tipo" id="melhoria">
+                                        <input class="form-check-input" type="radio" name="tipo" id="melhoria" value="Melhoria">
                                         <label class="form-check-label" for="melhoria">Melhoria</label>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Prioridade</label>
-                                <select class="form-select">
-                                    <option>Alta</option>
-                                    <option>Média</option>
-                                    <option>Baixa</option>
+                                <select class="form-select" id="prioridade" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Alta">Alta</option>
+                                    <option value="Média">Média</option>
+                                    <option value="Baixa">Baixa</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Data Desejada</label>
                                 <div class="input-group">
-                                    <input type="date" class="form-control">
+                                    <input type="date" class="form-control" id="dataDesejada" required>
                                 </div>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">Descrição Detalhada</label>
-                            <textarea class="form-control" rows="5" placeholder="Descrição Detalhada..."></textarea>
+                            <textarea class="form-control" rows="5" id="descricao" placeholder="Descrição Detalhada..." required></textarea>
                         </div>
                         <div class="mb-4">
                             <label class="form-label text-muted">Arquivos Anexos</label><br>
@@ -97,7 +104,7 @@
                         </div>
                         <hr class="text-secondary">
                         <div class="d-flex justify-content-end">
-                            <a href="demandas.html" class="btn btn-secondary me-2 bg-secondary border-0">Cancelar</a>
+                            <a href="Front_telademanda.html" class="btn btn-secondary me-2 bg-secondary border-0">Cancelar</a>
                             <button type="submit" class="btn btn-primary" style="background-color: #1e73be; border: none;">Salvar Demanda</button>
                         </div>
                     </form>
@@ -105,5 +112,6 @@
             </div>
         </div>
     </div>
+    <script src="js/NovaDemanda.js"></script>
 </body>
 </html>
