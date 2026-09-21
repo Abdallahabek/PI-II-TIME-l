@@ -1,34 +1,36 @@
 <!-- feito por: Abdallah Ali Borges El Khatib -->
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Demand Tracking</title>
+    <title>Painel - Acompanhamento de Demandas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <div class="wrapper">
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">DT</div>
-                <span style="font-size: 0.9rem; line-height: 1.1;">Development Demand<br>Tracking System</span>
+                <span style="font-size: 0.9rem; line-height: 1.1;">Sistema de Acompanhamento<br>de Demandas</span>
             </div>
             <div class="mt-3">
-                <a href="dashboard.html" class="nav-link active">
-                    <i class="fa-solid fa-border-all"></i> Dashboard
+                <a href="Dashbord.html" class="nav-link active">
+                    <i class="fa-solid fa-border-all"></i> Painel
                 </a>
-                <a href="demandas.html" class="nav-link">
+                <a href="Front_telademanda.html" class="nav-link">
                     <i class="fa-regular fa-clipboard"></i> Demandas
                 </a>
-                <a href="#" class="nav-link">
+                <a href="Configuracoes.html" class="nav-link">
                     <i class="fa-solid fa-gear"></i> Configurações
                 </a>
-                <a href="login.html" class="nav-link mt-5 text-danger">
+                <a href="Front_telalogin.html" class="nav-link mt-5 text-danger">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
                 </a>
             </div>
@@ -115,49 +117,76 @@
 
     <!-- Script para renderizar os gráficos zerados -->
     <script>
-        // Gráfico de Barras zerado
+        // Lógica de leitura do localStorage
+        const demandas = JSON.parse(localStorage.getItem('demandas')) || [];
+        
+        let abertas = 0;
+        let emAndamento = 0;
+        let concluidas = 0;
+
+        let alta = 0;
+        let media = 0;
+        let baixa = 0;
+
+        demandas.forEach(d => {
+            if (d.status === 'Aberto') abertas++;
+            if (d.status === 'Em Andamento') emAndamento++;
+            if (d.status === 'Concluído') concluidas++;
+
+            if (d.prioridade === 'Alta') alta++;
+            if (d.prioridade === 'Média') media++;
+            if (d.prioridade === 'Baixa') baixa++;
+        });
+
+        const total = demandas.length;
+
+        // Gráfico de Barras (Prioridades)
         const ctxBar = document.getElementById('barChart').getContext('2d');
         new Chart(ctxBar, {
             type: 'bar',
             data: {
-                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'],
+                labels: ['Alta', 'Média', 'Baixa'],
                 datasets: [{
                     label: 'Demandas',
-                    data: [0, 0, 0, 0, 0], // Valores zerados
-                    backgroundColor: '#e2e8f0',
-                    borderColor: '#cbd5e1',
+                    data: total === 0 ? [0,0,0] : [alta, media, baixa],
+                    backgroundColor: ['#dc3545', '#ffc107', '#198754'],
+                    borderColor: ['#b02a37', '#ffcd39', '#146c43'],
                     borderWidth: 1
                 }]
             },
             options: {
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, max: 10, ticks: { stepSize: 2 } }
+                    y: { beginAtZero: true, suggestedMax: total < 5 ? 5 : total, ticks: { stepSize: 1 } }
                 }
             }
         });
 
-        // Gráfico de Rosca zerado (exibindo um arco cinza para indicar vazio)
+        // Gráfico de Rosca (Status)
         const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
+        const doughnutData = total === 0 ? [1] : [abertas, emAndamento, concluidas];
+        const doughnutColors = total === 0 ? ['#f1f5f9'] : ['#0d6efd', '#ffc107', '#198754'];
+        const doughnutLabels = total === 0 ? ['Sem dados'] : ['Aberto', 'Em Andamento', 'Concluído'];
+
         new Chart(ctxDoughnut, {
             type: 'doughnut',
             data: {
-                labels: ['Sem dados'],
+                labels: doughnutLabels,
                 datasets: [{
-                    data: [1], // 1 apenas para desenhar o circulo cinza
-                    backgroundColor: ['#f1f5f9'],
-                    borderColor: ['#e2e8f0'],
+                    data: doughnutData,
+                    backgroundColor: doughnutColors,
                     borderWidth: 1
                 }]
             },
             options: {
                 cutout: '60%',
                 plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: false }
+                    legend: { display: total > 0, position: 'bottom' },
+                    tooltip: { enabled: total > 0 }
                 }
             }
         });
     </script>
 </body>
+
 </html>
