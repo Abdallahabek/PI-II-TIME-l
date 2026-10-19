@@ -9,9 +9,11 @@
     "build": "tsc"
   },
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^4.21.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^22.5.5",
     "ts-node": "^10.9.2",

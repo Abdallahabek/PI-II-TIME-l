@@ -1,14 +1,13 @@
-// Feito por Enrico Pacheco Del Manto
+// Feito por: Abdallah Ali Borges El Khatib
 
 function initNovaDemandaValidation() {
     const form = document.querySelector('form');
 
     if (form) {
-        form.addEventListener('submit', function (event) {
-            // Impedir envio padrão para validação
+        form.addEventListener('submit', async function (event) {
             event.preventDefault();
 
-            // Obter campos
+            // Pega os campos do formulario
             const tituloInput = document.getElementById('titulo');
             const solicitanteSelect = document.getElementById('solicitante');
             const prioridadeSelect = document.getElementById('prioridade');
@@ -22,16 +21,18 @@ function initNovaDemandaValidation() {
             const data = dataInput ? dataInput.value : '';
             const descricao = descricaoInput ? descricaoInput.value.trim() : '';
 
-            // Verificar tipo de demanda selecionado
+            // Verifica o tipo selecionado
             let tipoSelecionado = false;
+            let tipoSelecionadoValor = '';
             for (let i = 0; i < tipoRadios.length; i++) {
                 if (tipoRadios[i].checked) {
                     tipoSelecionado = true;
+                    tipoSelecionadoValor = tipoRadios[i].value;
                     break;
                 }
             }
 
-            // 1. Validar Título e Descrição (obrigatórios)
+            // Validacoes basicas de interface
             if (titulo === '') {
                 alert('O Título da demanda é obrigatório.');
                 return;
@@ -40,8 +41,6 @@ function initNovaDemandaValidation() {
                 alert('A Descrição detalhada é obrigatória.');
                 return;
             }
-
-            // 2. Validar Seleções obrigatórias (Solicitante e Prioridade)
             if (solicitante === '' || solicitante === 'Selecione...') {
                 alert('Por favor, selecione um solicitante válido.');
                 return;
@@ -50,14 +49,10 @@ function initNovaDemandaValidation() {
                 alert('Por favor, selecione uma prioridade válida.');
                 return;
             }
-
-            // 3. Validar se o tipo de demanda foi selecionado
             if (!tipoSelecionado) {
                 alert('Por favor, selecione um Tipo de Demanda.');
                 return;
             }
-
-            // 4. Validar formato e consistência da data
             if (data === '') {
                 alert('A Data Desejada é obrigatória.');
                 return;
@@ -65,10 +60,8 @@ function initNovaDemandaValidation() {
 
             const dataInserida = new Date(data);
             const dataAtual = new Date();
-            // Zerar as horas para comparar apenas os dias
             dataAtual.setHours(0, 0, 0, 0);
             dataInserida.setHours(0, 0, 0, 0);
-            // Ajustar fuso horário para a data do input type="date"
             dataInserida.setDate(dataInserida.getDate() + 1);
 
             if (dataInserida < dataAtual) {
@@ -76,33 +69,64 @@ function initNovaDemandaValidation() {
                 return;
             }
 
-            // Se passar por todas as validações
-            let tipoSelecionadoValor = '';
-            for (let i = 0; i < tipoRadios.length; i++) {
-                if (tipoRadios[i].checked) tipoSelecionadoValor = tipoRadios[i].value;
+            // Envia a requisicao para a API no backend Express
+            try {
+                const resposta = await fetch('http://localhost:3000/demandas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        titulo: titulo,
+                        descricao: descricao,
+                        tipo: tipoSelecionadoValor,
+                        prioridade: prioridade,
+                        projetoId: 'PRJ-001',
+                        responsavelId: solicitante === 'João Silva' ? 'USR-003' : 'USR-004',
+                        prazoFinalizacao: data
+                    })
+                });
+
+                const dados = await resposta.json();
+
+                // Se o servidor retornou erro (ex: 400 Bad Request)
+                if (!resposta.ok) {
+                    alert('Erro retornado pelo servidor: ' + (dados.mensagem || 'Dados inválidos.'));
+                    return;
+                }
+
+                // Salva no LocalStorage para a tela de listagem continuar funcionando
+                const demandasSalvas = JSON.parse(localStorage.getItem('demandas')) || [];
+                demandasSalvas.push(dados.demanda);
+                localStorage.setItem('demandas', JSON.stringify(demandasSalvas));
+
+                alert('Demanda criada com sucesso no servidor! ID: ' + dados.demanda.id);
+                window.location.href = 'Front_telademanda.html';
+
+            } catch (erro) {
+                // Se o servidor Express nao estiver rodando
+                console.warn('Servidor offline, salvando apenas localmente:', erro);
+
+                const dataCriacaoHoje = new Date();
+                const novaDemandaLocal = {
+                    id: 'DEM-' + String(Math.floor(Math.random() * 900) + 100),
+                    titulo: titulo,
+                    solicitante: solicitante,
+                    prioridade: prioridade,
+                    dataDesejada: data,
+                    dataCriacao: dataCriacaoHoje.toISOString().split('T')[0],
+                    descricao: descricao,
+                    tipo: tipoSelecionadoValor,
+                    status: 'Aberto'
+                };
+
+                const demandasSalvas = JSON.parse(localStorage.getItem('demandas')) || [];
+                demandasSalvas.push(novaDemandaLocal);
+                localStorage.setItem('demandas', JSON.stringify(demandasSalvas));
+
+                alert('Aviso: Nao foi possivel conectar com a API (localhost:3000). A demanda foi salva localmente no navegador.');
+                window.location.href = 'Front_telademanda.html';
             }
-
-            const dataCriacaoHoje = new Date();
-
-            const novaDemanda = {
-                id: 'DEM-' + String(Math.floor(Math.random() * 900) + 100), // Gera ID aleatório tipo DEM-123
-                titulo: titulo,
-                solicitante: solicitante,
-                prioridade: prioridade,
-                dataDesejada: data,
-                dataCriacao: dataCriacaoHoje.toISOString().split('T')[0],
-                descricao: descricao,
-                tipo: tipoSelecionadoValor,
-                status: 'Aberto'
-            };
-
-            // Salvar no LocalStorage
-            const demandasSalvas = JSON.parse(localStorage.getItem('demandas')) || [];
-            demandasSalvas.push(novaDemanda);
-            localStorage.setItem('demandas', JSON.stringify(demandasSalvas));
-
-            alert('Demanda criada com sucesso!');
-            window.location.href = 'Front_telademanda.html';
         });
     }
 }
