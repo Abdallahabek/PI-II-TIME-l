@@ -27,6 +27,7 @@ app.use('/', authRoutes);
 app.use('/projetos', projetosRoutes);
 app.use('/demandas', cadastroDemandasRoutes);
 app.use('/dashboard', dashboardRoutes);
+// Apos migrar src/routes/detalhesRoutes.ts e listagem para o Oracle, registrar aqui em /demandas
 
 app.use((req: Request, res: Response) => {
     res.status(404).json({
