@@ -6,7 +6,8 @@
   "scripts": {
     "start": "ts-node src/server.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "db:init": "ts-node src/scripts/initDb.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",

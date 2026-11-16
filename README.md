@@ -86,7 +86,11 @@ PI-II-TIME-l/
 * Acesso a uma instancia do Oracle Database (local, Docker ou servidor da disciplina)
 
 ### 2. Criar as tabelas e carga inicial no Oracle
-Execute no SQL Developer, SQL*Plus ou ferramenta equivalente os scripts na seguinte ordem:
+Voce pode executar automaticamente depois de configurar o `.env` (passo 4):
+```bash
+npm run db:init
+```
+Ou executar manualmente no SQL Developer / SQL*Plus na seguinte ordem:
 1. `sql/01_create_tables.sql`
 2. `sql/02_seed_data.sql`
 
