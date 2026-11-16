@@ -8,6 +8,8 @@ import authRoutes from './routes/auth.routes';
 import projetosRoutes from './routes/projetos.routes';
 import cadastroDemandasRoutes from './routes/cadastroDemandas.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import listagemDemandasRoutes from './routes/listagemDemandas.routes';
+import detalhesRoutes from './routes/detalhesRoutes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,8 +28,9 @@ app.get('/', (_req: Request, res: Response) => {
 app.use('/', authRoutes);
 app.use('/projetos', projetosRoutes);
 app.use('/demandas', cadastroDemandasRoutes);
+app.use('/demandas', listagemDemandasRoutes);
+app.use('/demandas', detalhesRoutes);
 app.use('/dashboard', dashboardRoutes);
-// Apos migrar src/routes/detalhesRoutes.ts e listagem para o Oracle, registrar aqui em /demandas
 
 app.use((req: Request, res: Response) => {
     res.status(404).json({
