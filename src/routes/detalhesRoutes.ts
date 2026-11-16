@@ -1,4 +1,5 @@
 // Autor: Vinicius Morais
+// Rotas de detalhes, comentarios, historico, transicao de status e cancelamento de demandas
 
 import { Router, Request, Response } from 'express';
 import oracledb from 'oracledb';
@@ -31,6 +32,7 @@ const SQL_BUSCAR_DEMANDA = `
      WHERE d.id = :id
 `;
 
+// Regras do ciclo de vida obrigatorio das demandas e restricoes do Membro da Equipe
 const TRANSICOES_PERMITIDAS: Record<StatusDemanda, StatusDemanda[]> = {
     'Aberta': ['Em andamento'],
     'Em andamento': ['Em revisão'],
@@ -85,6 +87,7 @@ interface ResultadoCarregamento {
     mensagem?: string;
 }
 
+// Valida formato numerico do ID, existencia da demanda e vinculo do usuario ao projeto
 async function carregarDemandaComAcesso(idUrl: string, usuario: UsuarioPublico): Promise<ResultadoCarregamento> {
     const id = lerIdDemanda(idUrl);
     if (id === null) {
@@ -264,6 +267,7 @@ router.get('/:id/historico', autenticarToken, async (req: Request, res: Response
     }
 });
 
+// Atualiza o status somente se nao houve mudanca concorrente e grava auditoria na mesma transacao
 async function aplicarNovoStatus(
     demanda: Demanda,
     novoStatus: StatusDemanda,

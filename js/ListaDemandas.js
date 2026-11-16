@@ -1,4 +1,5 @@
 // Autor: Vinicius Morais
+// Listagem de demandas integrada a API com filtros combinados, busca e ordenacao
 
 const PERFIS_GESTAO = ['Administrador', 'Líder de Projeto'];
 
@@ -57,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let temporizadorBusca = null;
     let requisicaoAtual = 0;
 
+    // Exibe o botao de nova demanda apenas para Administrador e Lider de Projeto
     if (podeGerenciar) {
         document.getElementById('btnNovaDemanda').classList.remove('d-none');
     }
@@ -121,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Monta os parametros de busca, filtros e ordenacao e ignora respostas fora de ordem
     function montarQueryString() {
         const params = new URLSearchParams();
         const busca = campoBusca.value.trim();
@@ -171,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Carrega listas de projetos e usuarios para popular os filtros dinamicamente
     async function carregarOpcoesFiltros() {
         try {
             const [respProjetos, respUsuarios] = await Promise.all([

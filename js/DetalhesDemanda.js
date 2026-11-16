@@ -1,4 +1,5 @@
 // Autor: Vinicius Morais
+// Tela de detalhes, ciclo de vida, cancelamento, comentarios e historico de alteracoes
 
 const PERFIS_GESTAO = ['Administrador', 'Líder de Projeto'];
 
@@ -137,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         cardDetalhes.classList.remove('d-none');
     }
 
+    // Define quais transicoes de status aparecem conforme perfil, vinculo e status atual
     function transicoesDisponiveis() {
         if (PERFIS_GESTAO.includes(usuario.perfil)) {
             return TRANSICOES_GESTAO[demanda.status] || [];
@@ -197,6 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Executa mudanca de status ou cancelamento via PATCH e recarrega o historico
     async function alterarStatus(novoStatus) {
         if (!confirm(`Alterar o status de "${demanda.status}" para "${novoStatus}"?`)) {
             return;
@@ -340,6 +343,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    // Valida e envia novos comentarios para a demanda usando POST /demandas/:id/comentarios
     function validarComentario() {
         const texto = campoComentario.value.trim();
         let mensagem = '';

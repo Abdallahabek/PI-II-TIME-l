@@ -1,4 +1,5 @@
 // Autor: Vinicius Morais
+// Rota GET /demandas com visibilidade por perfil, filtros combinados, busca e ordenacao
 
 import { Router, Request, Response } from 'express';
 import { ErroBancoIndisponivel, executarQuery } from '../config/database';
@@ -33,6 +34,7 @@ const MAPA_TIPOS: Record<string, TipoDemanda> = {
     documentacao: 'Documentação'
 };
 
+// Mapeia criterios de ordenacao permitidos para expressoes SQL seguras
 const ORDENACOES: Record<string, string> = {
     prioridade: `CASE d.prioridade WHEN 'Crítica' THEN 1 WHEN 'Alta' THEN 2 WHEN 'Média' THEN 3 WHEN 'Baixa' THEN 4 ELSE 5 END`,
     datacriacao: 'd.data_criacao',
@@ -68,6 +70,7 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
         const condicoes: string[] = [];
         const binds: Record<string, string | number> = {};
 
+        // Administrador enxerga todas as demandas; demais perfis veem apenas projetos vinculados
         if (usuario.perfil !== 'Administrador') {
             condicoes.push(
                 'EXISTS (SELECT 1 FROM usuario_projeto up WHERE up.projeto_id = d.projeto_id AND up.usuario_id = :usuarioLogadoId)'
@@ -139,6 +142,7 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
             binds.projetoId = projetoId;
         }
 
+        // Busca textual case-insensitive por titulo ou descricao
         const busca = lerParametro(req.query.busca);
         if (busca) {
             condicoes.push('(LOWER(d.titulo) LIKE :busca OR LOWER(d.descricao) LIKE :busca)');
