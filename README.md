@@ -17,8 +17,8 @@ Sistema web para gerenciamento e acompanhamento de demandas de software (tarefas
 
 | Integrante | Responsabilidades | Status |
 | :--- | :--- | :--- |
-| **Abdallah Ali Borges El Khatib** | Estrutura Oracle/SQL, autenticacao (`POST /login`, `GET /usuarios`), `GET /projetos`, `POST /demandas`, `PUT /demandas/:id`, `GET /dashboard`, validacao de feriados nacionais, servico de historico e telas de Login, Painel, Cadastro/Edicao e Perfil | Implementado na branch `feature/reuniao-5-integracao-oracle` |
-| **Vinicius Morais** | Rotas `GET /demandas` (filtros, busca e ordenacao), `GET /demandas/:id`, comentarios, transicoes de status, cancelamento, `GET /demandas/:id/historico` e integracao das telas de Listagem e Detalhes | Em andamento (integrar com `database.ts`, `auth.ts` e `historicoService.ts`) |
+| **Abdallah Ali Borges El Khatib** | Estrutura Oracle/SQL, autenticacao (`POST /login`, `GET /usuarios`), `GET /projetos`, `POST /demandas`, `PUT /demandas/:id`, `GET /dashboard`, validacao de feriados nacionais, servico de historico e telas de Login, Painel, Cadastro/Edicao e Perfil | Implementado |
+| **Vinicius Morais** | Rotas `GET /demandas` (filtros, busca e ordenacao), `GET /demandas/:id`, comentarios (`GET`/`POST`), ciclo de vida (`PATCH /demandas/:id/status`), cancelamento (`PATCH /demandas/:id/cancelar`), `GET /demandas/:id/historico` e integracao das telas de Listagem e Detalhes | Implementado |
 | **Enrico Pacheco Del Manto** | Estrutura inicial da tela de detalhes (etapas anteriores) | - |
 | **Lucas Ruman** | Listagem de demandas (atribuicao inicial) | - |
 
@@ -49,7 +49,11 @@ PI-II-TIME-l/
 │   │   ├── auth.routes.ts               # POST /login e GET /usuarios
 │   │   ├── projetos.routes.ts           # GET /projetos (filtrado por vinculo do usuario)
 │   │   ├── cadastroDemandas.routes.ts   # POST /demandas e PUT /demandas/:id
+│   │   ├── listagemDemandas.routes.ts   # GET /demandas (filtros, busca e ordenacao)
+│   │   ├── detalhesRoutes.ts            # GET /:id, comentarios, historico, status e cancelamento
 │   │   └── dashboard.routes.ts          # GET /dashboard
+│   ├── scripts/
+│   │   └── initDb.ts                    # Criacao das tabelas e seed no Oracle via .env
 │   ├── services/
 │   │   ├── feriadoService.ts            # Validacao de formato de data e feriados nacionais
 │   │   └── historicoService.ts          # Registro automatico na tabela historico_alteracoes
@@ -140,22 +144,18 @@ Abra `Front_telalogin.html` no navegador (recomendado usar a extensao Live Serve
 
 ---
 
-## Endpoints Disponiveis (Parte Integrada ao Oracle)
+## Endpoints Disponiveis (Integrados ao Oracle)
 
 * `GET /`: verifica se o servidor esta online.
 * `POST /login`: autentica e-mail e senha no Oracle e retorna `token` e dados do usuario (sem senha).
 * `GET /usuarios`: lista os usuarios cadastrados sem expor senhas (requer token).
 * `GET /projetos`: lista projetos do usuario autenticado via `usuario_projeto`, ou todos para Administrador (requer token).
+* `GET /demandas`: lista demandas respeitando a visibilidade do perfil, com filtros combinaveis (`status`, `prioridade`, `tipo`, `responsavelId`, `projetoId`), busca textual (`busca`) e ordenacao (`ordenarPor`).
+* `GET /demandas/:id`: retorna os dados completos de uma demanda respeitando o vinculo ao projeto.
 * `POST /demandas`: cadastra nova demanda com status `Aberta` (permitido para Administrador e Lider vinculado ao projeto). Valida prazo contra feriados nacionais na BrasilAPI.
 * `PUT /demandas/:id`: edita uma demanda aberta/em andamento/em revisao, atualiza `data_atualizacao`, valida feriado nacional e grava alteracoes de responsavel, prioridade e prazo em `historico_alteracoes`.
+* `GET /demandas/:id/comentarios` e `POST /demandas/:id/comentarios`: lista e registra comentarios na demanda para usuarios vinculados ao projeto.
+* `GET /demandas/:id/historico`: consulta o historico de alteracoes da demanda (sem exclusao de registros).
+* `PATCH /demandas/:id/status`: executa as transicoes permitidas do ciclo de vida conforme o perfil do usuario e registra automaticamente em `historico_alteracoes`.
+* `PATCH /demandas/:id/cancelar`: cancela a demanda (exceto se ja Concluida ou Cancelada), permitido para Administrador e Lider vinculado ao projeto, sem exclusao fisica no banco.
 * `GET /dashboard`: retorna totais por status, prioridade e tipo, demandas criticas em aberto e demandas proximas do prazo (vencidas ou com vencimento nos proximos 7 dias).
-
----
-
-## Guia Rapido de Integracao para a Parte do Vinicius
-
-Ao implementar as rotas restantes nesta base:
-1. Utilizar `executarQuery` / `comTransacao` de `src/config/database.ts` (IDs numericos).
-2. Proteger as rotas com `autenticarToken` de `src/middlewares/auth.ts` e validar acesso ao projeto com `usuarioTemAcessoAoProjeto`.
-3. Chamar `registrarHistorico` de `src/services/historicoService.ts` nas mudancas de status e cancelamento.
-4. Registrar os novos routers em `src/server.ts`.
