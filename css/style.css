@@ -1,10 +1,10 @@
 /*
- * Autores: Abdallah Ali Borges El Khatib, Enrico Pacheco Del Manto
+ * Autor: Abdallah Ali Borges El Khatib
  */
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0f2f5; /* Fundo cinza bem claro */
+    background-color: #f0f2f5;
     margin: 0;
     overflow-x: hidden;
 }
@@ -16,7 +16,7 @@ body {
     min-height: 100vh;
 }
 
-/* Barra Lateral (Sidebar) */
+/* Barra Lateral */
 .sidebar {
     width: 250px;
     background-color: #ffffff;
@@ -65,14 +65,14 @@ body {
     text-align: center;
 }
 
-/* Conteúdo Principal */
+/* Conteudo Principal */
 .main-content {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
 }
 
-/* Barra Superior (Topbar) */
+/* Barra Superior */
 .topbar {
     background-color: #ffffff;
     height: 60px;
@@ -151,7 +151,7 @@ body {
     color: #475569;
 }
 
-/* Formulários */
+/* Formularios */
 .form-control, .form-select {
     border-radius: 6px;
     border-color: #cbd5e1;

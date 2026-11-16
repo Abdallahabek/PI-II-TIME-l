@@ -1,5 +1,5 @@
-// Feito por: Abdallah Ali Borges El Khatib e Equipe
-// Definições de tipos e interfaces do Sistema de Acompanhamento de Demandas
+// Autor: Abdallah Ali Borges El Khatib
+// Interfaces e tipos compartilhados do sistema
 
 export type PerfilUsuario = 'Administrador' | 'Líder de Projeto' | 'Membro da Equipe';
 
@@ -10,7 +10,7 @@ export type PrioridadeDemanda = 'Crítica' | 'Alta' | 'Média' | 'Baixa';
 export type StatusDemanda = 'Aberta' | 'Em andamento' | 'Em revisão' | 'Concluída' | 'Cancelada';
 
 export interface Usuario {
-    id: string;
+    id: number;
     nome: string;
     email: string;
     senha?: string;
@@ -20,22 +20,22 @@ export interface Usuario {
 export type UsuarioPublico = Omit<Usuario, 'senha'>;
 
 export interface Projeto {
-    id: string;
+    id: number;
     nome: string;
     descricao: string;
     dataCriacao: string;
 }
 
 export interface Demanda {
-    id: string;
+    id: number;
     titulo: string;
     descricao: string;
     tipo: TipoDemanda;
     prioridade: PrioridadeDemanda;
     status: StatusDemanda;
-    projetoId: string;
+    projetoId: number;
     projetoNome: string;
-    responsavelId: string | null;
+    responsavelId: number | null;
     responsavelNome: string | null;
     dataCriacao: string;
     dataAtualizacao: string;
@@ -43,12 +43,24 @@ export interface Demanda {
 }
 
 export interface Comentario {
-    id: string;
-    demandaId: string;
-    usuarioId: string;
+    id: number;
+    demandaId: number;
+    usuarioId: number;
     usuarioNome: string;
     texto: string;
     dataCriacao: string;
+}
+
+export interface HistoricoAlteracao {
+    id: number;
+    demandaId: number;
+    usuarioId: number;
+    usuarioNome: string;
+    campoAlterado: string;
+    valorAnterior: string | null;
+    valorNovo: string;
+    descricao: string;
+    dataAlteracao: string;
 }
 
 export interface ResumoDashboard {
@@ -62,4 +74,12 @@ export interface ResumoDashboard {
         emAberto: string;
         proximasDoPrazo: string;
     };
+}
+
+declare global {
+    namespace Express {
+        interface Request {
+            usuario?: UsuarioPublico;
+        }
+    }
 }

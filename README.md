@@ -1,148 +1,157 @@
 # Sistema de Acompanhamento de Demandas de Desenvolvimento (PI-II-TIME-1)
 
-Sistema elaborado para o componente curricular Projeto Integrador II do curso de Engenharia de Software da PUC-Campinas (2026).
+Sistema web para gerenciamento e acompanhamento de demandas de software (tarefas, defeitos, melhorias e documentacao), desenvolvido para o componente curricular Projeto Integrador II do curso de Engenharia de Software da PUC-Campinas (2o Semestre / 2026).
 
 ---
 
-## Integrantes da Equipe e Responsabilidades (Reuniao 4)
+## Informacoes Academicas
 
-Divisao de responsabilidades da equipe:
+* **Curso:** Engenharia de Software
+* **Componente Curricular:** Projeto Integrador II
+* **Semestre/Ano:** 2o Semestre / 2026
+* **Professora Orientadora:** Renata Arantes
 
-| Integrante | Tela (Reunioes 2 e 3) | Rotas sob Responsabilidade | Status |
-| :--- | :--- | :--- | :--- |
-| **Abdallah Ali Borges El Khatib** | Cadastro/Edicao de Demanda | POST /demandas e GET /projetos | Implementado |
-| **Modulo Extra (Abdallah / Equipe)** | Dashboard | GET /dashboard | Implementado |
-| **Enrico Pacheco Del Manto** | Login | POST /login e GET /usuarios | Em desenvolvimento na branch do integrante |
-| **Lucas Ruman** | Listagem de Demandas | GET /demandas (com filtros, busca e ordenacao) | Em desenvolvimento na branch do integrante |
-| **Vinicius Morais** | Detalhes da Demanda | GET /demandas/:id e comentarios | Em desenvolvimento na branch do integrante |
+---
 
-### Informacoes Academicas
-* Curso: Engenharia de Software
-* Componente Curricular: Projeto Integrador II
-* Semestre/Ano: 2º Semestre / 2026
-* Professora Orientadora: Renata Arantes
+## Equipe e Divisao de Responsabilidades
+
+| Integrante | Responsabilidades | Status |
+| :--- | :--- | :--- |
+| **Abdallah Ali Borges El Khatib** | Estrutura Oracle/SQL, autenticacao (`POST /login`, `GET /usuarios`), `GET /projetos`, `POST /demandas`, `PUT /demandas/:id`, `GET /dashboard`, validacao de feriados nacionais, servico de historico e telas de Login, Painel, Cadastro/Edicao e Perfil | Implementado na branch `feature/reuniao-5-integracao-oracle` |
+| **Vinicius Morais** | Rotas `GET /demandas` (filtros, busca e ordenacao), `GET /demandas/:id`, comentarios, transicoes de status, cancelamento, `GET /demandas/:id/historico` e integracao das telas de Listagem e Detalhes | Em andamento (integrar com `database.ts`, `auth.ts` e `historicoService.ts`) |
+| **Enrico Pacheco Del Manto** | Estrutura inicial da tela de detalhes (etapas anteriores) | - |
+| **Lucas Ruman** | Listagem de demandas (atribuicao inicial) | - |
 
 ---
 
 ## Tecnologias Utilizadas
 
-* Node.js (versao LTS)
-* TypeScript
-* Express
-* CORS
-* ts-node-dev
+* **Backend:** Node.js (LTS), TypeScript, Express, CORS, dotenv, oracledb (Thin mode)
+* **Banco de Dados:** Oracle Database
+* **Frontend:** HTML5, CSS3, Bootstrap 5, JavaScript, Chart.js
+* **API Externa:** BrasilAPI (validacao de feriados nacionais no prazo de finalizacao)
 
 ---
 
-## Estrutura do Backend
+## Estrutura do Projeto
 
 ```text
 PI-II-TIME-l/
+├── sql/
+│   ├── 01_create_tables.sql             # Script DDL das tabelas no Oracle
+│   └── 02_seed_data.sql                 # Carga inicial (usuarios, projetos, demandas, comentarios, historico)
 ├── src/
-│   ├── data/
-│   │   └── mockData.ts               # Dados de teste compartilhados em memoria
+│   ├── config/
+│   │   └── database.ts                  # Pool de conexoes Oracle e helpers de query/transacao
+│   ├── middlewares/
+│   │   └── auth.ts                      # Autenticacao por token HMAC e controle por perfil
 │   ├── routes/
-│   │   ├── cadastroDemandas.routes.ts# [Abdallah] POST /demandas com validacoes
-│   │   ├── projetos.routes.ts        # [Abdallah] GET /projetos
-│   │   └── dashboard.routes.ts       # [Modulo Extra - Abdallah] GET /dashboard
+│   │   ├── auth.routes.ts               # POST /login e GET /usuarios
+│   │   ├── projetos.routes.ts           # GET /projetos (filtrado por vinculo do usuario)
+│   │   ├── cadastroDemandas.routes.ts   # POST /demandas e PUT /demandas/:id
+│   │   └── dashboard.routes.ts          # GET /dashboard
+│   ├── services/
+│   │   ├── feriadoService.ts            # Validacao de formato de data e feriados nacionais
+│   │   └── historicoService.ts          # Registro automatico na tabela historico_alteracoes
 │   ├── types/
-│   │   └── index.ts                  # Interfaces TypeScript
-│   └── server.ts                     # Servidor Express e registro de rotas
-├── dist/                             # Codigo compilado
+│   │   └── index.ts                     # Tipos e interfaces compartilhadas
+│   └── server.ts                        # Servidor Express e registro das rotas
+├── css/
+│   └── style.css                        # Estilos compartilhados das telas
+├── js/
+│   ├── auth.js                          # Sessao, token e topbar compartilhada
+│   ├── Login.js                         # Validacao e autenticacao na tela de login
+│   ├── Dashboard.js                     # Graficos e indicadores do painel
+│   ├── NovaDemanda.js                   # Cadastro e edicao de demandas
+│   ├── ListaDemandas.js                 # Listagem de demandas
+│   ├── DetalhesDemanda.js               # Detalhes da demanda
+│   └── Configuracoes.js                 # Exibicao do perfil autenticado e projetos
+├── Front_telalogin.html
+├── Dashbord.html
+├── Front_telademanda.html
+├── tela_nova_demanda.html
+├── Tela_detalhes_demanda.html
+├── Configuracoes.html
+├── .env.example
 ├── package.json
-├── tsconfig.json
-└── README.md
+└── tsconfig.json
 ```
 
 ---
 
-## Como Instalar e Executar
+## Como Criar o Banco, Configurar e Executar
 
-1. Instalar as dependencias:
+### 1. Pre-requisitos
+* Node.js (versao LTS) e npm
+* Acesso a uma instancia do Oracle Database (local, Docker ou servidor da disciplina)
+
+### 2. Criar as tabelas e carga inicial no Oracle
+Execute no SQL Developer, SQL*Plus ou ferramenta equivalente os scripts na seguinte ordem:
+1. `sql/01_create_tables.sql`
+2. `sql/02_seed_data.sql`
+
+### 3. Instalar dependencias
 ```bash
 npm install
 ```
 
-2. Executar em modo desenvolvimento:
+### 4. Configurar variaveis de ambiente
+Copie o arquivo `.env.example` para `.env` na raiz do projeto e preencha os dados de acesso ao Oracle:
+```env
+PORT=3000
+AUTH_SECRET=sua_chave_secreta
+
+ORACLE_USER=seu_usuario
+ORACLE_PASSWORD=sua_senha
+ORACLE_CONNECTION_STRING=localhost:1521/FREEPDB1
+```
+
+### 5. Executar o backend
+Em modo desenvolvimento:
 ```bash
 npm run dev
 ```
-O servidor vai rodar na porta 3000: `http://localhost:3000`
 
-3. Compilar e executar:
+Ou compilando para JavaScript antes de iniciar:
 ```bash
 npm run build
 npm start
 ```
 
----
+A API ficara disponivel em `http://localhost:3000`.
 
-## Criterios do Dashboard (GET /dashboard)
-
-1. Criterio para Demandas em Aberto:
-   * Demandas ativas no fluxo: 'Aberta', 'Em andamento' ou 'Em revisao'.
-   * Demandas concluidas ou canceladas nao entram como em aberto.
-
-2. Criterio para Demandas Proximas do Prazo:
-   * Demandas em aberto cujo prazo de finalizacao vence nos proximos 7 dias ou cujo prazo ja expirou sem conclusao.
+### 6. Executar o frontend
+Abra `Front_telalogin.html` no navegador (recomendado usar a extensao Live Server no VS Code) com a API rodando em `http://localhost:3000`.
 
 ---
 
-## Rotas de Abdallah Ali Borges El Khatib
+## Usuarios Pre-cadastrados para Teste
 
-### 1. POST /demandas
-Cadastra uma nova demanda validando titulo, descricao, tipo, prioridade e projeto. O status 'Aberta', a data de criacao, atualizacao e ID sao gerados automaticamente pelo servidor.
-
-Exemplo de requisicao:
-```bash
-curl -X POST http://localhost:3000/demandas \
-  -H "Content-Type: application/json" \
-  -d '{
-    "titulo": "Corrigir falha no login",
-    "descricao": "Erro ao logar com caracteres especiais",
-    "tipo": "Defeito",
-    "prioridade": "Alta",
-    "projetoId": "PRJ-001",
-    "responsavelId": "USR-004",
-    "prazoFinalizacao": "2026-11-20"
-  }'
-```
-
-Resposta de sucesso (201 Created):
-```json
-{
-  "mensagem": "Demanda cadastrada com sucesso.",
-  "demanda": {
-    "id": "DEM-009",
-    "titulo": "Corrigir falha no login",
-    "status": "Aberta"
-  }
-}
-```
-
-Exemplo de erro (400 Bad Request):
-```bash
-curl -X POST http://localhost:3000/demandas \
-  -H "Content-Type: application/json" \
-  -d '{"titulo": "Sem descricao"}'
-```
+| Perfil | E-mail | Senha |
+| :--- | :--- | :--- |
+| Administrador | `admin@puc.br` | `Admin123` |
+| Lider de Projeto | `lider@puc.br` | `Lider123` |
+| Membro da Equipe | `abdallah@puc.br` | `Dev123` |
+| Membro da Equipe | `vinicius@puc.br` | `Dev123` |
 
 ---
 
-### 2. GET /projetos
-Retorna a lista dos projetos pre-cadastrados.
+## Endpoints Disponiveis (Parte Integrada ao Oracle)
 
-Exemplo de requisicao:
-```bash
-curl http://localhost:3000/projetos
-```
+* `GET /`: verifica se o servidor esta online.
+* `POST /login`: autentica e-mail e senha no Oracle e retorna `token` e dados do usuario (sem senha).
+* `GET /usuarios`: lista os usuarios cadastrados sem expor senhas (requer token).
+* `GET /projetos`: lista projetos do usuario autenticado via `usuario_projeto`, ou todos para Administrador (requer token).
+* `POST /demandas`: cadastra nova demanda com status `Aberta` (permitido para Administrador e Lider vinculado ao projeto). Valida prazo contra feriados nacionais na BrasilAPI.
+* `PUT /demandas/:id`: edita uma demanda aberta/em andamento/em revisao, atualiza `data_atualizacao`, valida feriado nacional e grava alteracoes de responsavel, prioridade e prazo em `historico_alteracoes`.
+* `GET /dashboard`: retorna totais por status, prioridade e tipo, demandas criticas em aberto e demandas proximas do prazo (vencidas ou com vencimento nos proximos 7 dias).
 
 ---
 
-### 3. GET /dashboard
-Retorna os totais de demandas por status, prioridade, tipo, demandas criticas em aberto e proximas do prazo.
+## Guia Rapido de Integracao para a Parte do Vinicius
 
-Exemplo de requisicao:
-```bash
-curl http://localhost:3000/dashboard
-```
+Ao implementar as rotas restantes nesta base:
+1. Utilizar `executarQuery` / `comTransacao` de `src/config/database.ts` (IDs numericos).
+2. Proteger as rotas com `autenticarToken` de `src/middlewares/auth.ts` e validar acesso ao projeto com `usuarioTemAcessoAoProjeto`.
+3. Chamar `registrarHistorico` de `src/services/historicoService.ts` nas mudancas de status e cancelamento.
+4. Registrar os novos routers em `src/server.ts`.
