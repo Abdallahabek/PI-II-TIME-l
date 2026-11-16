@@ -1,114 +1,226 @@
-// Feito por Enrico Pacheco Del Manto
+// Autor: Abdallah Ali Borges El Khatib
+// Validacoes de formulario e integracao de cadastro/edicao de demandas com a API
 
-function initNovaDemandaValidation() {
-    const form = document.querySelector('form');
-
-    if (form) {
-        form.addEventListener('submit', function (event) {
-            // Impedir envio padrão para validação
-            event.preventDefault();
-
-            // Obter campos
-            const tituloInput = document.getElementById('titulo');
-            const solicitanteSelect = document.getElementById('solicitante');
-            const prioridadeSelect = document.getElementById('prioridade');
-            const dataInput = document.getElementById('dataDesejada');
-            const descricaoInput = document.getElementById('descricao');
-            const tipoRadios = document.getElementsByName('tipo');
-
-            const titulo = tituloInput ? tituloInput.value.trim() : '';
-            const solicitante = solicitanteSelect ? solicitanteSelect.value : '';
-            const prioridade = prioridadeSelect ? prioridadeSelect.value : '';
-            const data = dataInput ? dataInput.value : '';
-            const descricao = descricaoInput ? descricaoInput.value.trim() : '';
-
-            // Verificar tipo de demanda selecionado
-            let tipoSelecionado = false;
-            for (let i = 0; i < tipoRadios.length; i++) {
-                if (tipoRadios[i].checked) {
-                    tipoSelecionado = true;
-                    break;
-                }
-            }
-
-            // 1. Validar Título e Descrição (obrigatórios)
-            if (titulo === '') {
-                alert('O Título da demanda é obrigatório.');
-                return;
-            }
-            if (descricao === '') {
-                alert('A Descrição detalhada é obrigatória.');
-                return;
-            }
-
-            // 2. Validar Seleções obrigatórias (Solicitante e Prioridade)
-            if (solicitante === '' || solicitante === 'Selecione...') {
-                alert('Por favor, selecione um solicitante válido.');
-                return;
-            }
-            if (prioridade === '' || prioridade === 'Selecione...') {
-                alert('Por favor, selecione uma prioridade válida.');
-                return;
-            }
-
-            // 3. Validar se o tipo de demanda foi selecionado
-            if (!tipoSelecionado) {
-                alert('Por favor, selecione um Tipo de Demanda.');
-                return;
-            }
-
-            // 4. Validar formato e consistência da data
-            if (data === '') {
-                alert('A Data Desejada é obrigatória.');
-                return;
-            }
-
-            const dataInserida = new Date(data);
-            const dataAtual = new Date();
-            // Zerar as horas para comparar apenas os dias
-            dataAtual.setHours(0, 0, 0, 0);
-            dataInserida.setHours(0, 0, 0, 0);
-            // Ajustar fuso horário para a data do input type="date"
-            dataInserida.setDate(dataInserida.getDate() + 1);
-
-            if (dataInserida < dataAtual) {
-                alert('A Data Desejada não pode ser anterior à data de hoje.');
-                return;
-            }
-
-            // Se passar por todas as validações
-            let tipoSelecionadoValor = '';
-            for (let i = 0; i < tipoRadios.length; i++) {
-                if (tipoRadios[i].checked) tipoSelecionadoValor = tipoRadios[i].value;
-            }
-
-            const dataCriacaoHoje = new Date();
-
-            const novaDemanda = {
-                id: 'DEM-' + String(Math.floor(Math.random() * 900) + 100), // Gera ID aleatório tipo DEM-123
-                titulo: titulo,
-                solicitante: solicitante,
-                prioridade: prioridade,
-                dataDesejada: data,
-                dataCriacao: dataCriacaoHoje.toISOString().split('T')[0],
-                descricao: descricao,
-                tipo: tipoSelecionadoValor,
-                status: 'Aberto'
-            };
-
-            // Salvar no LocalStorage
-            const demandasSalvas = JSON.parse(localStorage.getItem('demandas')) || [];
-            demandasSalvas.push(novaDemanda);
-            localStorage.setItem('demandas', JSON.stringify(demandasSalvas));
-
-            alert('Demanda criada com sucesso!');
-            window.location.href = 'Front_telademanda.html';
-        });
+function exibirErroFormulario(mensagem) {
+    const box = document.getElementById('formErro');
+    if (box) {
+        box.textContent = mensagem;
+        box.classList.remove('d-none');
+    } else {
+        alert(mensagem);
     }
 }
 
+function limparErroFormulario() {
+    const box = document.getElementById('formErro');
+    if (box) {
+        box.textContent = '';
+        box.classList.add('d-none');
+    }
+}
+
+async function carregarSelectProjetos(selectProjeto) {
+    const { ok, dados } = await apiFetch('/projetos');
+    if (!ok) {
+        throw new Error(dados.mensagem || 'Erro ao carregar projetos.');
+    }
+
+    selectProjeto.textContent = '';
+    const optPadrao = document.createElement('option');
+    optPadrao.value = '';
+    optPadrao.textContent = 'Selecione um projeto...';
+    selectProjeto.appendChild(optPadrao);
+
+    (dados.projetos || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = String(p.id);
+        opt.textContent = p.nome;
+        selectProjeto.appendChild(opt);
+    });
+}
+
+async function carregarSelectUsuarios(selectUsuario) {
+    const { ok, dados } = await apiFetch('/usuarios');
+    if (!ok) {
+        throw new Error(dados.mensagem || 'Erro ao carregar usuarios.');
+    }
+
+    selectUsuario.textContent = '';
+    const optVazio = document.createElement('option');
+    optVazio.value = '';
+    optVazio.textContent = 'Sem responsavel';
+    selectUsuario.appendChild(optVazio);
+
+    (dados.usuarios || []).forEach(u => {
+        const opt = document.createElement('option');
+        opt.value = String(u.id);
+        opt.textContent = `${u.nome} (${u.perfil})`;
+        selectUsuario.appendChild(opt);
+    });
+}
+
+async function preencherEdicao(demandaId) {
+    const { ok, dados } = await apiFetch(`/demandas/${demandaId}`);
+    if (!ok) {
+        throw new Error(dados.mensagem || 'Nao foi possivel carregar os dados da demanda para edicao.');
+    }
+
+    const demanda = dados.demanda || dados;
+
+    document.getElementById('titulo').value = demanda.titulo || '';
+    document.getElementById('descricao').value = demanda.descricao || '';
+    document.getElementById('projetoId').value = demanda.projetoId ? String(demanda.projetoId) : '';
+    document.getElementById('responsavelId').value = demanda.responsavelId ? String(demanda.responsavelId) : '';
+    document.getElementById('prioridade').value = demanda.prioridade || '';
+    document.getElementById('prazoFinalizacao').value = demanda.prazoFinalizacao || '';
+
+    const radios = document.getElementsByName('tipo');
+    for (let i = 0; i < radios.length; i++) {
+        radios[i].checked = radios[i].value === demanda.tipo;
+    }
+}
+
+async function initNovaDemanda() {
+    const usuario = verificarAutenticacao();
+    if (!usuario) {
+        return;
+    }
+
+    preencherUsuarioTopbar(usuario);
+
+    const form = document.getElementById('demandaForm');
+    const btnSalvar = document.getElementById('btnSalvar');
+    const selectProjeto = document.getElementById('projetoId');
+    const selectResponsavel = document.getElementById('responsavelId');
+
+    if (usuario.perfil === 'Membro da Equipe') {
+        exibirErroFormulario('Membros da equipe nao possuem permissao para criar ou editar demandas.');
+        if (btnSalvar) {
+            btnSalvar.disabled = true;
+        }
+        return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const idEdicao = params.get('id');
+
+    if (idEdicao) {
+        document.getElementById('tituloFormulario').textContent = `Editar Demanda #${idEdicao}`;
+        if (btnSalvar) {
+            btnSalvar.textContent = 'Salvar Alteracoes';
+        }
+    }
+
+    try {
+        await Promise.all([
+            carregarSelectProjetos(selectProjeto),
+            carregarSelectUsuarios(selectResponsavel)
+        ]);
+
+        if (idEdicao) {
+            await preencherEdicao(idEdicao);
+        }
+    } catch (erro) {
+        exibirErroFormulario(erro.message || 'Erro ao carregar dados iniciais do servidor.');
+    }
+
+    if (!form) {
+        return;
+    }
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        limparErroFormulario();
+
+        const titulo = document.getElementById('titulo').value.trim();
+        const projetoId = selectProjeto.value;
+        const responsavelId = selectResponsavel.value;
+        const prioridade = document.getElementById('prioridade').value;
+        const prazo = document.getElementById('prazoFinalizacao').value;
+        const descricao = document.getElementById('descricao').value.trim();
+
+        const tipoRadios = document.getElementsByName('tipo');
+        let tipoSelecionado = '';
+        for (let i = 0; i < tipoRadios.length; i++) {
+            if (tipoRadios[i].checked) {
+                tipoSelecionado = tipoRadios[i].value;
+                break;
+            }
+        }
+
+        if (titulo === '') {
+            exibirErroFormulario('O titulo da demanda e obrigatorio.');
+            return;
+        }
+        if (projetoId === '') {
+            exibirErroFormulario('Selecione o projeto vinculado a demanda.');
+            return;
+        }
+        if (tipoSelecionado === '') {
+            exibirErroFormulario('Selecione um tipo de demanda.');
+            return;
+        }
+        if (prioridade === '') {
+            exibirErroFormulario('Selecione uma prioridade.');
+            return;
+        }
+        if (descricao === '') {
+            exibirErroFormulario('A descricao detalhada e obrigatoria.');
+            return;
+        }
+
+        if (prazo !== '' && !idEdicao) {
+            const hoje = new Date();
+            const hojeIso = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
+            if (prazo < hojeIso) {
+                exibirErroFormulario('O prazo de finalizacao nao pode ser anterior a data de hoje.');
+                return;
+            }
+        }
+
+        if (btnSalvar) {
+            btnSalvar.disabled = true;
+            btnSalvar.textContent = 'Salvando...';
+        }
+
+        const payload = {
+            titulo,
+            descricao,
+            tipo: tipoSelecionado,
+            prioridade,
+            projetoId: Number(projetoId),
+            responsavelId: responsavelId !== '' ? Number(responsavelId) : null,
+            prazoFinalizacao: prazo !== '' ? prazo : null
+        };
+
+        try {
+            const metodo = idEdicao ? 'PUT' : 'POST';
+            const endpoint = idEdicao ? `/demandas/${idEdicao}` : '/demandas';
+
+            const { ok, dados } = await apiFetch(endpoint, {
+                method: metodo,
+                body: JSON.stringify(payload)
+            });
+
+            if (!ok) {
+                exibirErroFormulario(dados.mensagem || 'Nao foi possivel salvar a demanda.');
+                return;
+            }
+
+            window.location.href = 'Front_telademanda.html';
+        } catch {
+            exibirErroFormulario('Nao foi possivel conectar ao servidor para salvar a demanda.');
+        } finally {
+            if (btnSalvar) {
+                btnSalvar.disabled = false;
+                btnSalvar.textContent = idEdicao ? 'Salvar Alteracoes' : 'Salvar Demanda';
+            }
+        }
+    });
+}
+
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initNovaDemandaValidation);
+    document.addEventListener('DOMContentLoaded', initNovaDemanda);
 } else {
-    initNovaDemandaValidation();
+    initNovaDemanda();
 }

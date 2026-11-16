@@ -1,4 +1,4 @@
-<!-- feito por: Abdallah Ali Borges El Khatib -->
+<!-- Autor: Abdallah Ali Borges El Khatib -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 
@@ -14,7 +14,7 @@
 
 <body>
     <div class="wrapper">
-        <!-- Sidebar -->
+        <!-- Barra lateral -->
         <div class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">DT</div>
@@ -28,7 +28,7 @@
                     <i class="fa-regular fa-clipboard"></i> Demandas
                 </a>
                 <a href="Configuracoes.html" class="nav-link">
-                    <i class="fa-solid fa-gear"></i> Configurações
+                    <i class="fa-solid fa-gear"></i> Configuracoes
                 </a>
                 <a href="Front_telalogin.html" class="nav-link mt-5 text-danger">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
@@ -36,12 +36,12 @@
             </div>
         </div>
 
-        <!-- Main Content -->
+        <!-- Conteudo principal -->
         <div class="main-content">
             <div class="topbar">
-                <h5 class="m-0 text-dark">Bem-vindo, Aluno</h5>
-                <div class="user-info">
-                    Bem-vindo, Aluno
+                <h5 class="m-0 text-dark">Painel de Indicadores</h5>
+                <div class="user-info" id="topbarUsuario">
+                    Carregando...
                     <div class="user-avatar">
                         <i class="fa-solid fa-user"></i>
                     </div>
@@ -49,63 +49,118 @@
             </div>
 
             <div class="p-4">
-                <!-- Cards de Metricas Zerados -->
-                <div class="row mb-2">
-                    <div class="col-md-3">
-                        <div class="card card-custom card-metric">
-                            <div class="metric-title">Total Demandas</div>
-                            <h2 class="metric-value">0</h2>
+                <div id="dashboardErro" class="alert alert-danger d-none" role="alert"></div>
+
+                <!-- Cards de totais por status -->
+                <div class="row g-3 mb-4">
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Total</div>
+                            <h2 class="metric-value" id="metricTotal">0</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card card-custom card-metric">
-                            <div class="metric-title">Em Andamento</div>
-                            <h2 class="metric-value">0</h2>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Abertas</div>
+                            <h2 class="metric-value text-primary" id="metricAbertas">0</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card card-custom card-metric">
-                            <div class="metric-title">Concluídas</div>
-                            <h2 class="metric-value">0</h2>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Em andamento</div>
+                            <h2 class="metric-value text-warning" id="metricEmAndamento">0</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card card-custom card-metric">
-                            <div class="metric-title">Aguardando</div>
-                            <h2 class="metric-value">0</h2>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Em revisao</div>
+                            <h2 class="metric-value text-info" id="metricEmRevisao">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Concluidas</div>
+                            <h2 class="metric-value text-success" id="metricConcluidas">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-sm-4 col-6">
+                        <div class="card card-custom card-metric mb-0">
+                            <div class="metric-title">Canceladas</div>
+                            <h2 class="metric-value text-secondary" id="metricCanceladas">0</h2>
                         </div>
                     </div>
                 </div>
 
+                <!-- Graficos por prioridade, status e tipo -->
+                <div class="row mb-2">
+                    <div class="col-md-4">
+                        <div class="card card-custom">
+                            <div class="card-header-custom">Demandas por Prioridade</div>
+                            <div class="card-body">
+                                <canvas id="barChartPrioridade" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-custom">
+                            <div class="card-header-custom">Status das Demandas</div>
+                            <div class="card-body">
+                                <canvas id="doughnutChartStatus" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card card-custom">
+                            <div class="card-header-custom">Demandas por Tipo</div>
+                            <div class="card-body">
+                                <canvas id="barChartTipo" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listas de atencao -->
                 <div class="row">
-                    <!-- Gráfico de Barras -->
-                    <div class="col-md-8">
-                        <div class="card card-custom h-100">
-                            <div class="card-header-custom">Demandas por Mês</div>
-                            <div class="card-body d-flex align-items-center justify-content-center">
-                                <!-- Gráfico vazio / zerado -->
-                                <canvas id="barChart" height="120"></canvas>
+                    <div class="col-md-6">
+                        <div class="card card-custom">
+                            <div class="card-header-custom text-danger">Demandas Criticas em Aberto</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-custom mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Titulo</th>
+                                                <th>Projeto</th>
+                                                <th>Status</th>
+                                                <th>Prazo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabelaCriticas"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Gráfico de Rosca e Atividade -->
-                    <div class="col-md-4">
-                        <div class="card card-custom mb-4">
-                            <div class="card-header-custom">Status das Demandas</div>
-                            <div class="card-body">
-                                <canvas id="doughnutChart" height="200"></canvas>
-                            </div>
-                        </div>
-
+                    <div class="col-md-6">
                         <div class="card card-custom">
-                            <div class="card-header-custom">Atividade Recente</div>
-                            <div class="card-body">
-                                <ul class="list-unstyled mb-0" style="font-size: 0.9rem;">
-                                    <li class="text-center text-muted py-3">
-                                        Nenhuma atividade recente registrada.
-                                    </li>
-                                </ul>
+                            <div class="card-header-custom text-warning">Demandas Proximas do Prazo</div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover table-custom mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Titulo</th>
+                                                <th>Responsavel</th>
+                                                <th>Status</th>
+                                                <th>Prazo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabelaPrazo"></tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -115,78 +170,8 @@
         </div>
     </div>
 
-    <!-- Script para renderizar os gráficos zerados -->
-    <script>
-        // Lógica de leitura do localStorage
-        const demandas = JSON.parse(localStorage.getItem('demandas')) || [];
-        
-        let abertas = 0;
-        let emAndamento = 0;
-        let concluidas = 0;
-
-        let alta = 0;
-        let media = 0;
-        let baixa = 0;
-
-        demandas.forEach(d => {
-            if (d.status === 'Aberto') abertas++;
-            if (d.status === 'Em Andamento') emAndamento++;
-            if (d.status === 'Concluído') concluidas++;
-
-            if (d.prioridade === 'Alta') alta++;
-            if (d.prioridade === 'Média') media++;
-            if (d.prioridade === 'Baixa') baixa++;
-        });
-
-        const total = demandas.length;
-
-        // Gráfico de Barras (Prioridades)
-        const ctxBar = document.getElementById('barChart').getContext('2d');
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: ['Alta', 'Média', 'Baixa'],
-                datasets: [{
-                    label: 'Demandas',
-                    data: total === 0 ? [0,0,0] : [alta, media, baixa],
-                    backgroundColor: ['#dc3545', '#ffc107', '#198754'],
-                    borderColor: ['#b02a37', '#ffcd39', '#146c43'],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, suggestedMax: total < 5 ? 5 : total, ticks: { stepSize: 1 } }
-                }
-            }
-        });
-
-        // Gráfico de Rosca (Status)
-        const ctxDoughnut = document.getElementById('doughnutChart').getContext('2d');
-        const doughnutData = total === 0 ? [1] : [abertas, emAndamento, concluidas];
-        const doughnutColors = total === 0 ? ['#f1f5f9'] : ['#0d6efd', '#ffc107', '#198754'];
-        const doughnutLabels = total === 0 ? ['Sem dados'] : ['Aberto', 'Em Andamento', 'Concluído'];
-
-        new Chart(ctxDoughnut, {
-            type: 'doughnut',
-            data: {
-                labels: doughnutLabels,
-                datasets: [{
-                    data: doughnutData,
-                    backgroundColor: doughnutColors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                cutout: '60%',
-                plugins: {
-                    legend: { display: total > 0, position: 'bottom' },
-                    tooltip: { enabled: total > 0 }
-                }
-            }
-        });
-    </script>
+    <script src="js/auth.js"></script>
+    <script src="js/Dashboard.js"></script>
 </body>
 
 </html>
