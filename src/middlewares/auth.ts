@@ -24,6 +24,7 @@ function assinar(dadosBase64: string): string {
         .digest('base64url');
 }
 
+// Gera token assinado com validade de 24h para o usuario autenticado
 export function gerarToken(usuario: UsuarioPublico): string {
     const payload: TokenPayload = {
         id: usuario.id,
@@ -121,6 +122,7 @@ export function exigirPerfis(...perfisPermitidos: PerfilUsuario[]) {
     };
 }
 
+// Verifica se Administrador ou usuario vinculado ao projeto na tabela usuario_projeto
 export async function usuarioTemAcessoAoProjeto(
     usuario: UsuarioPublico,
     projetoId: number

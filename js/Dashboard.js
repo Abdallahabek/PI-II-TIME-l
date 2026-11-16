@@ -60,6 +60,7 @@ function preencherTabelaDemandas(tbodyId, lista, campoTerceiraColuna) {
     });
 }
 
+// Monta os graficos de prioridade, status e tipo com Chart.js
 function renderizarGraficos(resumo) {
     const total = resumo.totalDemandas;
 
@@ -148,6 +149,7 @@ function renderizarGraficos(resumo) {
     });
 }
 
+// Busca os indicadores em GET /dashboard e atualiza cards, graficos e tabelas
 async function initDashboard() {
     const usuario = verificarAutenticacao();
     if (!usuario) {

@@ -13,6 +13,7 @@ export interface RegistroHistoricoInput {
     descricao: string;
 }
 
+// Insere registro de alteracao imutavel usando conexao da transacao quando informada
 export async function registrarHistorico(
     dados: RegistroHistoricoInput,
     conn?: oracledb.Connection

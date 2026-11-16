@@ -1,6 +1,7 @@
 // Autor: Abdallah Ali Borges El Khatib
 // Exibicao dos dados do usuario autenticado e projetos vinculados
 
+// Preenche os campos somente leitura e lista projetos retornados por GET /projetos
 async function initConfiguracoes() {
     const usuario = verificarAutenticacao();
     if (!usuario) {

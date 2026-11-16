@@ -59,6 +59,7 @@ async function carregarSelectUsuarios(selectUsuario) {
     });
 }
 
+// Carrega dados da demanda existente quando aberta em modo edicao (?id=)
 async function preencherEdicao(demandaId) {
     const { ok, dados } = await apiFetch(`/demandas/${demandaId}`);
     if (!ok) {
@@ -193,6 +194,7 @@ async function initNovaDemanda() {
             prazoFinalizacao: prazo !== '' ? prazo : null
         };
 
+        // Envia criacao (POST) ou atualizacao (PUT) conforme o modo da tela
         try {
             const metodo = idEdicao ? 'PUT' : 'POST';
             const endpoint = idEdicao ? `/demandas/${idEdicao}` : '/demandas';

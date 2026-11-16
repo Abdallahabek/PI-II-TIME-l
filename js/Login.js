@@ -36,6 +36,7 @@ function initLoginValidation() {
         const email = emailInput ? emailInput.value.trim() : '';
         const senha = passwordInput ? passwordInput.value : '';
 
+        // Validacoes basicas de cliente antes de consultar a API
         if (email === '' || senha.trim() === '') {
             exibirErroLogin('O e-mail e a senha nao podem estar vazios.');
             return;
@@ -65,6 +66,7 @@ function initLoginValidation() {
             btnEntrar.textContent = 'Entrando...';
         }
 
+        // Envia credenciais para POST /login e salva o token recebido
         try {
             const { ok, dados } = await apiFetch('/login', {
                 method: 'POST',

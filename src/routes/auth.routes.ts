@@ -16,6 +16,7 @@ interface UsuarioRow {
 
 const router = Router();
 
+// Autentica o usuario no Oracle e devolve token sem expor a senha
 router.post('/login', async (req: Request, res: Response) => {
     try {
         const { email, senha } = req.body || {};
@@ -80,6 +81,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 });
 
+// Lista usuarios cadastrados (sem senha) para atribuicao de responsavel
 router.get('/usuarios', autenticarToken, async (_req: Request, res: Response) => {
     try {
         const resultado = await executarQuery<UsuarioPublico>(

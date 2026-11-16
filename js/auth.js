@@ -31,6 +31,7 @@ function limparSessao() {
     localStorage.removeItem(CHAVE_USUARIO);
 }
 
+// Redireciona para o login se nao houver sessao salva
 function verificarAutenticacao() {
     const token = obterToken();
     const usuario = obterUsuario();
@@ -70,6 +71,7 @@ function preencherUsuarioTopbar(usuario) {
     }
 }
 
+// Wrapper de fetch que envia o Bearer token e trata sessao expirada
 async function apiFetch(caminho, opcoes = {}) {
     const token = obterToken();
     const headers = new Headers(opcoes.headers || {});

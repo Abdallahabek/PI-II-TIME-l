@@ -24,6 +24,7 @@ function formatarDataLocalIso(data: Date): string {
     return `${ano}-${mes}-${dia}`;
 }
 
+// Retorna totais por status/prioridade/tipo, criticas em aberto e proximas do prazo
 router.get('/', autenticarToken, async (req: Request, res: Response) => {
     try {
         const usuario = req.usuario!;

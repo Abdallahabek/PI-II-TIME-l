@@ -8,6 +8,7 @@ import { Projeto } from '../types';
 
 const router = Router();
 
+// Administrador enxerga todos os projetos; demais perfis veem apenas os vinculados
 router.get('/', autenticarToken, async (req: Request, res: Response) => {
     try {
         const usuario = req.usuario!;

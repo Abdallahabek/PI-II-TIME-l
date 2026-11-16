@@ -1,6 +1,7 @@
 // Autor: Abdallah Ali Borges El Khatib
 // Interfaces e tipos compartilhados do sistema
 
+// Perfis e enumeracoes de dominio conforme Documento de Visao
 export type PerfilUsuario = 'Administrador' | 'Líder de Projeto' | 'Membro da Equipe';
 
 export type TipoDemanda = 'Tarefa' | 'Defeito' | 'Melhoria' | 'Documentação';
@@ -76,6 +77,7 @@ export interface ResumoDashboard {
     };
 }
 
+// Adiciona o usuario autenticado ao objeto Request do Express
 declare global {
     namespace Express {
         interface Request {
