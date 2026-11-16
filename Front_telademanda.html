@@ -1,4 +1,4 @@
-<!-- Feito por: Abdallah Ali Borges El Khatib -->
+<!-- Autor: Abdallah Ali Borges El Khatib -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -26,62 +26,119 @@
                 <a href="Configuracoes.html" class="nav-link">
                     <i class="fa-solid fa-gear"></i> Configurações
                 </a>
+                <a href="Front_telalogin.html" class="nav-link mt-5 text-danger">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                </a>
             </div>
         </div>
 
         <div class="main-content">
             <div class="topbar">
-                <h5 class="m-0 text-dark">Bem-vindo, Aluno</h5>
-                <div class="user-info">
-                    Bem-vindo, Aluno
+                <h5 class="m-0 text-dark">Demandas</h5>
+                <div class="user-info" id="topbarUsuario">
+                    Carregando...
                     <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
                 </div>
             </div>
 
             <div class="p-4">
                 <div class="card card-custom p-4">
-                    <div class="d-flex justify-content-between mb-4">
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
                         <div class="input-group" style="max-width: 400px;">
                             <span class="input-group-text bg-white"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                            <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Pesquisar demanda...">
+                            <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Pesquisar por título ou descrição...">
                         </div>
                         <div>
-                            <button class="btn btn-light border text-muted me-2"><i class="fa-solid fa-filter"></i> Filtrar</button>
-                            <a href="tela_nova_demanda.html" class="btn btn-primary" style="background-color: #1e73be; border: none;">+ Nova Demanda</a>
+                            <button type="button" id="btnLimparFiltros" class="btn btn-light border text-muted me-2">
+                                <i class="fa-solid fa-filter-circle-xmark"></i> Limpar filtros
+                            </button>
+                            <a href="tela_nova_demanda.html" id="btnNovaDemanda" class="btn btn-primary d-none" style="background-color: #1e73be; border: none;">+ Nova Demanda</a>
                         </div>
                     </div>
 
-                    <!-- Tabela Limpa -->
+                    <div class="row g-2 mb-4">
+                        <div class="col-md-2">
+                            <label for="filtroStatus" class="form-label small text-muted mb-1">Status</label>
+                            <select id="filtroStatus" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="Aberta">Aberta</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Em revisão">Em revisão</option>
+                                <option value="Concluída">Concluída</option>
+                                <option value="Cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroPrioridade" class="form-label small text-muted mb-1">Prioridade</label>
+                            <select id="filtroPrioridade" class="form-select form-select-sm">
+                                <option value="">Todas</option>
+                                <option value="Crítica">Crítica</option>
+                                <option value="Alta">Alta</option>
+                                <option value="Média">Média</option>
+                                <option value="Baixa">Baixa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroTipo" class="form-label small text-muted mb-1">Tipo</label>
+                            <select id="filtroTipo" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                <option value="Tarefa">Tarefa</option>
+                                <option value="Defeito">Defeito</option>
+                                <option value="Melhoria">Melhoria</option>
+                                <option value="Documentação">Documentação</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroProjeto" class="form-label small text-muted mb-1">Projeto</label>
+                            <select id="filtroProjeto" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="filtroResponsavel" class="form-label small text-muted mb-1">Responsável</label>
+                            <select id="filtroResponsavel" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="ordenarPor" class="form-label small text-muted mb-1">Ordenar por</label>
+                            <select id="ordenarPor" class="form-select form-select-sm">
+                                <option value="dataCriacao">Data de criação</option>
+                                <option value="prioridade">Prioridade</option>
+                                <option value="prazoFinalizacao">Prazo de finalização</option>
+                                <option value="status">Status</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="alertaErro" class="alert alert-danger d-none" role="alert"></div>
+
                     <div class="table-responsive">
                         <table class="table table-hover table-custom">
                             <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>Título</th>
-                                    <th>Solicitante</th>
+                                    <th>Tipo</th>
+                                    <th>Projeto</th>
+                                    <th>Responsável</th>
                                     <th>Status</th>
                                     <th>Prioridade</th>
                                     <th>Data de Criação</th>
+                                    <th>Prazo de Finalização</th>
                                     <th>Ações</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <!-- Linhas injetadas dinamicamente via ListaDemandas.js -->
-                            </tbody>
+                            <tbody id="tabelaDemandas"></tbody>
                         </table>
                     </div>
 
-                    <div class="d-flex justify-content-center mt-3">
-                        <ul class="pagination pagination-sm">
-                            <li class="page-item disabled"><a class="page-link" href="#">&lt;</a></li>
-                            <li class="page-item active"><a class="page-link" href="#" style="background-color:#1e73be; border-color:#1e73be;">1</a></li>
-                            <li class="page-item disabled"><a class="page-link" href="#">&gt;</a></li>
-                        </ul>
-                    </div>
+                    <div class="text-muted small mt-2" id="totalDemandas"></div>
                 </div>
             </div>
         </div>
     </div>
+    <script src="js/auth.js"></script>
     <script src="js/ListaDemandas.js"></script>
 </body>
 </html>

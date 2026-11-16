@@ -1,4 +1,4 @@
-<!-- Feito por: Enrico Pacheco Del Manto -->
+<!-- Autor: Enrico Pacheco Del Manto -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -22,11 +22,17 @@
             margin-bottom: 10px;
             font-size: 1.1rem;
         }
+        .lista-comentarios {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .descricao-texto {
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
     <div class="wrapper">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">DT</div>
@@ -42,14 +48,17 @@
                 <a href="Configuracoes.html" class="nav-link">
                     <i class="fa-solid fa-gear"></i> Configurações
                 </a>
+                <a href="Front_telalogin.html" class="nav-link mt-5 text-danger">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
+                </a>
             </div>
         </div>
-        <!-- Main Content -->
+
         <div class="main-content">
             <div class="topbar">
-                <h5 class="m-0 text-dark">Bem-vindo, Aluno 2</h5>
-                <div class="user-info">
-                    Bem-vindo, Aluno 2
+                <h5 class="m-0 text-dark">Detalhes da Demanda</h5>
+                <div class="user-info" id="topbarUsuario">
+                    Carregando...
                     <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
                 </div>
             </div>
@@ -59,96 +68,86 @@
                         <i class="fa-solid fa-arrow-left me-1"></i> Voltar para Demandas
                     </a>
                 </div>
-                <div class="card card-custom p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="text-dark fw-normal m-0" id="detalhe-titulo">Detalhes da Demanda: Carregando...</h4>
-                        <div id="acoes-status">
-                            <!-- Botões injetados via JS -->
-                        </div>
+
+                <div id="alertaErro" class="alert alert-danger d-none" role="alert"></div>
+                <div id="alertaSucesso" class="alert alert-success d-none" role="alert"></div>
+
+                <div class="card card-custom p-4 d-none" id="cardDetalhes">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                        <h4 class="text-dark fw-normal m-0" id="detalhe-titulo"></h4>
+                        <div id="acoes-status" class="d-flex flex-wrap gap-2"></div>
                     </div>
-                    
+
                     <div class="row">
-                        <!-- Coluna Esquerda -->
                         <div class="col-md-4">
                             <div class="panel">
                                 <div class="panel-title">Informações Básicas</div>
-                                <p class="mb-1 text-muted">Solicitante: <span class="text-dark" id="detalhe-solicitante">Carregando...</span></p>
-                                <p class="mb-1 text-muted">Tipo: <span class="text-dark" id="detalhe-tipo">Carregando...</span></p>
-                                <p class="mb-0 text-muted">Prioridade: <span class="text-danger" id="detalhe-prioridade">Carregando...</span></p>
+                                <p class="mb-1 text-muted">Projeto: <span class="text-dark" id="detalhe-projeto"></span></p>
+                                <p class="mb-1 text-muted">Tipo: <span class="text-dark" id="detalhe-tipo"></span></p>
+                                <p class="mb-1 text-muted">Prioridade: <span id="detalhe-prioridade"></span></p>
+                                <p class="mb-0 text-muted">Status atual: <span class="badge" id="detalhe-status"></span></p>
                             </div>
-                            
+
                             <div class="panel">
                                 <div class="panel-title">Datas</div>
-                                <p class="mb-1 text-muted">Criação: <span class="text-dark" id="detalhe-criacao">Carregando...</span></p>
-                                <p class="mb-0 text-muted">Desejada: <span class="text-dark" id="detalhe-desejada">Carregando...</span></p>
+                                <p class="mb-1 text-muted">Criação: <span class="text-dark" id="detalhe-criacao"></span></p>
+                                <p class="mb-1 text-muted">Última atualização: <span class="text-dark" id="detalhe-atualizacao"></span></p>
+                                <p class="mb-0 text-muted">Prazo de finalização: <span class="text-dark" id="detalhe-prazo"></span></p>
                             </div>
-                            
+
                             <div class="panel">
                                 <div class="panel-title">Atribuído a</div>
-                                <p class="mb-0 text-muted">Desenvolvedor: <span class="text-dark">Ana Costa</span></p>
+                                <p class="mb-0 text-muted">Responsável: <span class="text-dark" id="detalhe-responsavel"></span></p>
                             </div>
                         </div>
-                        <!-- Coluna Direita -->
+
                         <div class="col-md-8">
                             <div class="panel">
                                 <div class="panel-title">Descrição</div>
-                                <p class="text-muted mb-0" id="detalhe-descricao">Carregando...</p>
+                                <p class="text-muted mb-0 descricao-texto" id="detalhe-descricao"></p>
                             </div>
-                            
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="panel h-100">
-                                        <div class="panel-title">Arquivos Anexos</div>
-                                        <div class="d-flex">
-                                            <div class="bg-light border rounded p-3 me-2 text-center" style="width:60px; height:60px;">
-                                                <i class="fa-regular fa-file-lines text-muted fs-4"></i>
-                                            </div>
-                                            <div class="bg-light border rounded p-3 text-center" style="width:60px; height:60px;">
-                                                <i class="fa-solid fa-file-image text-muted fs-4"></i>
-                                            </div>
-                                        </div>
+
+                            <div class="panel">
+                                <div class="panel-title">Comentários da Equipe</div>
+                                <div id="listaComentarios" class="lista-comentarios mb-3"></div>
+                                <form id="formComentario" novalidate>
+                                    <label for="textoComentario" class="form-label small text-muted">Novo comentário</label>
+                                    <textarea id="textoComentario" class="form-control" rows="3" maxlength="1000" placeholder="Escreva um comentário..."></textarea>
+                                    <div class="invalid-feedback" id="erroComentario"></div>
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted" id="contadorComentario">0/1000</small>
+                                        <button type="submit" class="btn btn-primary btn-sm" id="btnEnviarComentario" style="background-color: #1e73be; border: none;">
+                                            <i class="fa-solid fa-paper-plane"></i> Enviar
+                                        </button>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="panel h-100">
-                                        <div class="panel-title">Comentários da Equipe</div>
-                                        <div class="d-flex mb-2">
-                                            <div class="me-2"><i class="fa-solid fa-circle-user text-secondary fs-3"></i></div>
-                                            <div>
-                                                <strong>Alian Costa</strong><br>
-                                                <span class="text-muted" style="font-size:0.9rem;">Ajuste no fluxo validado em QA.</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>
-                    <!-- Histórico -->
+
                     <div class="mt-4">
                         <h5 class="text-dark fw-normal mb-3">Histórico de Alterações</h5>
                         <div class="table-responsive">
                             <table class="table table-sm table-custom">
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Título</th>
-                                        <th>Status</th>
-                                        <th>Data Desejada</th>
-                                        <th>Data de Criação</th>
+                                        <th>Data/Hora</th>
+                                        <th>Alterado por</th>
+                                        <th>Campo</th>
+                                        <th>Valor anterior</th>
+                                        <th>Novo valor</th>
+                                        <th>Descrição</th>
                                     </tr>
                                 </thead>
-                                <tbody id="detalhe-historico">
-                                    <!-- Carregado via JS -->
-                                </tbody>
+                                <tbody id="detalhe-historico"></tbody>
                             </table>
                         </div>
                     </div>
-                    
                 </div>
             </div>
         </div>
     </div>
+    <script src="js/auth.js"></script>
     <script src="js/DetalhesDemanda.js"></script>
 </body>
 </html>

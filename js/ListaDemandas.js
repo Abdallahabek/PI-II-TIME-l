@@ -1,94 +1,213 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const tableBody = document.querySelector('tbody');
-    const searchInput = document.getElementById('searchInput');
-    
-    // Ler demandas do localStorage
-    let demandas = JSON.parse(localStorage.getItem('demandas')) || [];
-    
-    if (demandas.length === 0) {
-        demandas = [
-            {
-                id: 'DEM-001',
-                titulo: 'Ajuste no fluxo de login',
-                solicitante: 'João Silva',
-                prioridade: 'Alta',
-                dataDesejada: '2023-11-05',
-                dataCriacao: '2023-10-20',
-                descricao: 'Ajuste no fluxo de login para corrigir travamentos em smartphones. Ajuste da Demanda em solicitante, Tipo: Melhoria, Prioridade: Alta.',
-                tipo: 'Defeito',
-                status: 'Aberto'
-            }
-        ];
-        localStorage.setItem('demandas', JSON.stringify(demandas));
+// Autor: Vinicius Morais
+
+const PERFIS_GESTAO = ['Administrador', 'Líder de Projeto'];
+
+const CORES_STATUS = {
+    'Aberta': 'bg-primary',
+    'Em andamento': 'bg-warning text-dark',
+    'Em revisão': 'bg-info text-dark',
+    'Concluída': 'bg-success',
+    'Cancelada': 'bg-secondary'
+};
+
+const CORES_PRIORIDADE = {
+    'Crítica': 'text-danger fw-bold',
+    'Alta': 'text-danger',
+    'Média': 'text-warning',
+    'Baixa': 'text-success'
+};
+
+function escaparHtml(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatarData(valor) {
+    if (!valor) {
+        return '-';
+    }
+    const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const usuario = verificarAutenticacao();
+    if (!usuario) {
+        return;
+    }
+    preencherUsuarioTopbar(usuario);
+
+    const podeGerenciar = PERFIS_GESTAO.includes(usuario.perfil);
+    const tabela = document.getElementById('tabelaDemandas');
+    const alertaErro = document.getElementById('alertaErro');
+    const totalDemandas = document.getElementById('totalDemandas');
+    const campoBusca = document.getElementById('searchInput');
+    const filtros = {
+        status: document.getElementById('filtroStatus'),
+        prioridade: document.getElementById('filtroPrioridade'),
+        tipo: document.getElementById('filtroTipo'),
+        projetoId: document.getElementById('filtroProjeto'),
+        responsavelId: document.getElementById('filtroResponsavel')
+    };
+    const campoOrdenacao = document.getElementById('ordenarPor');
+    let temporizadorBusca = null;
+    let requisicaoAtual = 0;
+
+    if (podeGerenciar) {
+        document.getElementById('btnNovaDemanda').classList.remove('d-none');
     }
 
-    // Função para deletar
-    window.deletarDemanda = function(id) {
-        if(confirm(`Tem certeza que deseja excluir a demanda ${id}?`)) {
-            demandas = demandas.filter(d => d.id !== id);
-            localStorage.setItem('demandas', JSON.stringify(demandas));
-            renderTable(demandas);
-        }
+    function exibirErro(mensagem) {
+        alertaErro.textContent = mensagem;
+        alertaErro.classList.remove('d-none');
     }
-    
-    function renderTable(lista) {
-        tableBody.innerHTML = '';
-        
-        if (lista.length === 0) {
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-5">
-                        <i class="fa-regular fa-folder-open fs-2 mb-2 text-secondary"></i><br>
-                        Nenhuma demanda encontrada.
-                    </td>
-                </tr>
-            `;
+
+    function ocultarErro() {
+        alertaErro.textContent = '';
+        alertaErro.classList.add('d-none');
+    }
+
+    function renderizarMensagemTabela(texto) {
+        tabela.innerHTML = `
+            <tr>
+                <td colspan="10" class="text-center text-muted py-5">
+                    <i class="fa-regular fa-folder-open fs-2 mb-2 text-secondary"></i><br>
+                    ${escaparHtml(texto)}
+                </td>
+            </tr>
+        `;
+    }
+
+    function renderizarTabela(demandas) {
+        tabela.innerHTML = '';
+        totalDemandas.textContent = `${demandas.length} demanda(s) encontrada(s).`;
+
+        if (demandas.length === 0) {
+            renderizarMensagemTabela('Nenhuma demanda encontrada.');
             return;
         }
-        
-        lista.forEach(demanda => {
-            let badgeColor = demanda.prioridade === 'Alta' ? 'text-danger' : 
-                             (demanda.prioridade === 'Média' ? 'text-warning' : 'text-success');
-                             
-            if(demanda.prioridade === 'Baixa') badgeColor = 'text-success';
-            
-            let statusBadge = demanda.status === 'Aberto' ? 'bg-primary' : 
-                              (demanda.status === 'Em Andamento' ? 'bg-warning text-dark' : 'bg-success');
-                              
+
+        demandas.forEach(demanda => {
+            const podeEditar = podeGerenciar && demanda.status !== 'Concluída' && demanda.status !== 'Cancelada';
+            const botaoEditar = podeEditar
+                ? `<a href="tela_nova_demanda.html?id=${demanda.id}" class="btn btn-sm btn-outline-primary" title="Editar">
+                       <i class="fa-solid fa-pen"></i>
+                   </a>`
+                : '';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td>${demanda.id}</td>
-                <td>${demanda.titulo}</td>
-                <td>${demanda.solicitante}</td>
-                <td><span class="badge ${statusBadge}">${demanda.status}</span></td>
-                <td><span class="${badgeColor}">${demanda.prioridade}</span></td>
-                <td>${demanda.dataCriacao}</td>
-                <td>
+                <td>${escaparHtml(demanda.titulo)}</td>
+                <td>${escaparHtml(demanda.tipo)}</td>
+                <td>${escaparHtml(demanda.projetoNome)}</td>
+                <td>${escaparHtml(demanda.responsavelNome || 'Sem responsável')}</td>
+                <td><span class="badge ${CORES_STATUS[demanda.status] || 'bg-light text-dark'}">${escaparHtml(demanda.status)}</span></td>
+                <td><span class="${CORES_PRIORIDADE[demanda.prioridade] || ''}">${escaparHtml(demanda.prioridade)}</span></td>
+                <td>${formatarData(demanda.dataCriacao)}</td>
+                <td>${formatarData(demanda.prazoFinalizacao)}</td>
+                <td class="text-nowrap">
                     <a href="Tela_detalhes_demanda.html?id=${demanda.id}" class="btn btn-sm btn-outline-secondary me-1" title="Ver Detalhes">
                         <i class="fa-solid fa-eye"></i>
                     </a>
-                    <button onclick="deletarDemanda('${demanda.id}')" class="btn btn-sm btn-outline-danger" title="Excluir">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    ${botaoEditar}
                 </td>
             `;
-            tableBody.appendChild(tr);
+            tabela.appendChild(tr);
         });
     }
 
-    // Filtro de pesquisa
-    if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-            const termo = e.target.value.toLowerCase();
-            const filtradas = demandas.filter(d => 
-                d.titulo.toLowerCase().includes(termo) || 
-                d.id.toLowerCase().includes(termo) ||
-                d.solicitante.toLowerCase().includes(termo)
-            );
-            renderTable(filtradas);
+    function montarQueryString() {
+        const params = new URLSearchParams();
+        const busca = campoBusca.value.trim();
+        if (busca) {
+            params.set('busca', busca);
+        }
+        Object.entries(filtros).forEach(([chave, campo]) => {
+            if (campo.value) {
+                params.set(chave, campo.value);
+            }
+        });
+        params.set('ordenarPor', campoOrdenacao.value);
+        return params.toString();
+    }
+
+    async function carregarDemandas() {
+        const numeroRequisicao = ++requisicaoAtual;
+        ocultarErro();
+        renderizarMensagemTabela('Carregando demandas...');
+        totalDemandas.textContent = '';
+
+        try {
+            const { ok, dados } = await apiFetch(`/demandas?${montarQueryString()}`);
+            if (numeroRequisicao !== requisicaoAtual) {
+                return;
+            }
+            if (!ok) {
+                renderizarMensagemTabela('Não foi possível carregar as demandas.');
+                exibirErro(dados.mensagem || 'Erro ao carregar demandas.');
+                return;
+            }
+            renderizarTabela(dados.demandas || []);
+        } catch (erro) {
+            if (numeroRequisicao !== requisicaoAtual) {
+                return;
+            }
+            renderizarMensagemTabela('Não foi possível carregar as demandas.');
+            exibirErro(erro.message || 'Não foi possível conectar ao servidor.');
+        }
+    }
+
+    function preencherSelect(select, itens) {
+        itens.forEach(item => {
+            const opcao = document.createElement('option');
+            opcao.value = String(item.id);
+            opcao.textContent = item.nome;
+            select.appendChild(opcao);
         });
     }
 
-    // Render inicial
-    renderTable(demandas);
+    async function carregarOpcoesFiltros() {
+        try {
+            const [respProjetos, respUsuarios] = await Promise.all([
+                apiFetch('/projetos'),
+                apiFetch('/usuarios')
+            ]);
+            if (respProjetos.ok) {
+                preencherSelect(filtros.projetoId, respProjetos.dados.projetos || []);
+            }
+            if (respUsuarios.ok) {
+                preencherSelect(filtros.responsavelId, respUsuarios.dados.usuarios || []);
+            }
+            if (!respProjetos.ok || !respUsuarios.ok) {
+                exibirErro('Não foi possível carregar todas as opções de filtro.');
+            }
+        } catch (erro) {
+            exibirErro(erro.message || 'Não foi possível carregar as opções de filtro.');
+        }
+    }
+
+    campoBusca.addEventListener('input', function () {
+        clearTimeout(temporizadorBusca);
+        temporizadorBusca = setTimeout(carregarDemandas, 400);
+    });
+
+    Object.values(filtros).forEach(campo => campo.addEventListener('change', carregarDemandas));
+    campoOrdenacao.addEventListener('change', carregarDemandas);
+
+    document.getElementById('btnLimparFiltros').addEventListener('click', function () {
+        campoBusca.value = '';
+        Object.values(filtros).forEach(campo => {
+            campo.value = '';
+        });
+        campoOrdenacao.value = 'dataCriacao';
+        carregarDemandas();
+    });
+
+    carregarOpcoesFiltros();
+    carregarDemandas();
 });
