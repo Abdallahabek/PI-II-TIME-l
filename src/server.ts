@@ -11,7 +11,10 @@ import dashboardRoutes from './routes/dashboard.routes';
 import listagemDemandasRoutes from './routes/listagemDemandas.routes';
 import detalhesRoutes from './routes/detalhesRoutes';
 
+import { registrarSwagger } from './openapi';
+
 const app = express();
+registrarSwagger(app);
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
@@ -67,6 +70,7 @@ async function iniciarServidor() {
     });
 }
 
-iniciarServidor();
+if (require.main === module) iniciarServidor();
 
 export default app;
+

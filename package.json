@@ -7,7 +7,11 @@
     "start": "ts-node src/server.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "db:init": "ts-node src/scripts/initDb.ts"
+    "db:init": "ts-node src/scripts/initDb.ts",
+    "swagger": "ts-node src/openapi.ts",
+    "test": "node -r ts-node/register --test tests/api.test.ts",
+    "start:com-testes": "npm test && npm start",
+    "start:sem-testes": "npm start"
   },
   "dependencies": {
     "cors": "^2.8.6",
