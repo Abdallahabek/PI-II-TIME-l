@@ -73,6 +73,11 @@
                 <div id="alertaErro" class="alert alert-danger d-none" role="alert"></div>
                 <div id="alertaSucesso" class="alert alert-success d-none" role="alert"></div>
 
+                <!-- Estado de carregamento enquanto os detalhes sao buscados na API -->
+                <div id="estadoCarregando" class="card card-custom p-4 text-center text-muted">
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> Carregando detalhes da demanda...
+                </div>
+
                 <!-- Painel principal com dados, comentarios e historico da demanda -->
                 <div class="card card-custom p-4 d-none" id="cardDetalhes">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
@@ -112,6 +117,9 @@
                             <div class="panel">
                                 <div class="panel-title">Comentários da Equipe</div>
                                 <div id="listaComentarios" class="lista-comentarios mb-3"></div>
+                                <div id="avisoComentariosBloqueados" class="alert alert-secondary small d-none mb-0" role="alert">
+                                    <i class="fa-solid fa-lock me-1"></i> Comentários desabilitados para demandas concluídas ou canceladas.
+                                </div>
                                 <form id="formComentario" novalidate>
                                     <label for="textoComentario" class="form-label small text-muted">Novo comentário</label>
                                     <textarea id="textoComentario" class="form-control" rows="3" maxlength="1000" placeholder="Escreva um comentário..."></textarea>

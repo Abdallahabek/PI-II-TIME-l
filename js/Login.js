@@ -1,6 +1,8 @@
 // Autor: Abdallah Ali Borges El Khatib
 // Validacao de formulario e autenticacao via POST /login
 
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 function exibirErroLogin(mensagem) {
     const box = document.getElementById('loginErro');
     if (box) {
@@ -20,6 +22,23 @@ function limparErroLogin() {
 }
 
 function initLoginValidation() {
+    // Exibe aviso se o usuario foi redirecionado por sessao expirada
+    if (sessionStorage.getItem('sessaoExpirada') === '1') {
+        sessionStorage.removeItem('sessaoExpirada');
+        exibirErroLogin('Sua sessão expirou. Faça login novamente.');
+    }
+
+    // Se ja existe sessao valida e nao expirada, redireciona direto para o painel
+    if (possuiSessaoValida()) {
+        window.location.href = 'Dashbord.html';
+        return;
+    }
+
+    // Limpa eventual token expirado ou corrompido restante no localStorage
+    if (obterToken() || obterUsuario()) {
+        limparSessao();
+    }
+
     const form = document.getElementById('loginForm');
     if (!form) {
         return;
@@ -36,14 +55,14 @@ function initLoginValidation() {
         const email = emailInput ? emailInput.value.trim() : '';
         const senha = passwordInput ? passwordInput.value : '';
 
-        // Validacoes basicas de cliente antes de consultar a API
+        // Validacoes de cliente coerentes com as regras da Reuniao 3
         if (email === '' || senha.trim() === '') {
-            exibirErroLogin('O e-mail e a senha nao podem estar vazios.');
+            exibirErroLogin('O e-mail e a senha não podem estar vazios.');
             return;
         }
 
-        if (!email.includes('@') || !email.includes('.')) {
-            exibirErroLogin('Por favor, insira um e-mail valido.');
+        if (!REGEX_EMAIL.test(email)) {
+            exibirErroLogin('Por favor, insira um e-mail válido.');
             return;
         }
 
@@ -57,7 +76,7 @@ function initLoginValidation() {
         const temNumero = /[0-9]/.test(senha);
 
         if (!temMaiuscula || !temMinuscula || !temNumero) {
-            exibirErroLogin('A senha deve conter ao menos uma letra maiuscula, uma minuscula e um numero.');
+            exibirErroLogin('A senha deve conter ao menos uma letra maiúscula, uma minúscula e um número.');
             return;
         }
 
@@ -74,14 +93,19 @@ function initLoginValidation() {
             });
 
             if (!ok) {
-                exibirErroLogin(dados.mensagem || 'Credenciais invalidas.');
+                exibirErroLogin(dados.mensagem || 'Credenciais inválidas.');
+                return;
+            }
+
+            if (!dados.token || !dados.usuario) {
+                exibirErroLogin('Resposta inválida do servidor ao autenticar.');
                 return;
             }
 
             salvarSessao(dados.token, dados.usuario);
             window.location.href = 'Dashbord.html';
         } catch {
-            exibirErroLogin('Nao foi possivel conectar ao servidor em http://localhost:3000.');
+            exibirErroLogin(`Não foi possível conectar ao servidor em ${API_BASE_URL}.`);
         } finally {
             if (btnEntrar) {
                 btnEntrar.disabled = false;

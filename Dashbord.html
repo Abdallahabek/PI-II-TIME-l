@@ -9,12 +9,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
     <div class="wrapper">
-        <!-- Barra lateral -->
+        <!-- Barra lateral de navegacao -->
         <div class="sidebar">
             <div class="sidebar-brand">
                 <div class="logo-icon">DT</div>
@@ -28,7 +28,7 @@
                     <i class="fa-regular fa-clipboard"></i> Demandas
                 </a>
                 <a href="Configuracoes.html" class="nav-link">
-                    <i class="fa-solid fa-gear"></i> Configuracoes
+                    <i class="fa-solid fa-gear"></i> Configurações
                 </a>
                 <a href="Front_telalogin.html" class="nav-link mt-5 text-danger">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i> Sair
@@ -36,7 +36,7 @@
             </div>
         </div>
 
-        <!-- Conteudo principal -->
+        <!-- Conteudo principal do painel de indicadores -->
         <div class="main-content">
             <div class="topbar">
                 <h5 class="m-0 text-dark">Painel de Indicadores</h5>
@@ -73,13 +73,13 @@
                     </div>
                     <div class="col-md-2 col-sm-4 col-6">
                         <div class="card card-custom card-metric mb-0">
-                            <div class="metric-title">Em revisao</div>
+                            <div class="metric-title">Em revisão</div>
                             <h2 class="metric-value text-info" id="metricEmRevisao">0</h2>
                         </div>
                     </div>
                     <div class="col-md-2 col-sm-4 col-6">
                         <div class="card card-custom card-metric mb-0">
-                            <div class="metric-title">Concluidas</div>
+                            <div class="metric-title">Concluídas</div>
                             <h2 class="metric-value text-success" id="metricConcluidas">0</h2>
                         </div>
                     </div>
@@ -98,6 +98,7 @@
                             <div class="card-header-custom">Demandas por Prioridade</div>
                             <div class="card-body">
                                 <canvas id="barChartPrioridade" height="200"></canvas>
+                                <p id="avisoChartPrioridade" class="text-muted small text-center d-none mb-0"></p>
                             </div>
                         </div>
                     </div>
@@ -106,6 +107,7 @@
                             <div class="card-header-custom">Status das Demandas</div>
                             <div class="card-body">
                                 <canvas id="doughnutChartStatus" height="200"></canvas>
+                                <p id="avisoChartStatus" class="text-muted small text-center d-none mb-0"></p>
                             </div>
                         </div>
                     </div>
@@ -114,23 +116,27 @@
                             <div class="card-header-custom">Demandas por Tipo</div>
                             <div class="card-body">
                                 <canvas id="barChartTipo" height="200"></canvas>
+                                <p id="avisoChartTipo" class="text-muted small text-center d-none mb-0"></p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Listas de atencao -->
+                <!-- Listas de atencao: criticas em aberto e proximas do prazo -->
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card card-custom">
-                            <div class="card-header-custom text-danger">Demandas Criticas em Aberto</div>
+                            <div class="card-header-custom text-danger">
+                                <div>Demandas Críticas em Aberto</div>
+                                <small id="criterioCriticas" class="text-muted fw-normal d-none"></small>
+                            </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover table-custom mb-0">
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
-                                                <th>Titulo</th>
+                                                <th>Título</th>
                                                 <th>Projeto</th>
                                                 <th>Status</th>
                                                 <th>Prazo</th>
@@ -145,15 +151,18 @@
 
                     <div class="col-md-6">
                         <div class="card card-custom">
-                            <div class="card-header-custom text-warning">Demandas Proximas do Prazo</div>
+                            <div class="card-header-custom text-warning">
+                                <div>Demandas Próximas do Prazo</div>
+                                <small id="criterioPrazo" class="text-muted fw-normal d-none"></small>
+                            </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
                                     <table class="table table-hover table-custom mb-0">
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
-                                                <th>Titulo</th>
-                                                <th>Responsavel</th>
+                                                <th>Título</th>
+                                                <th>Responsável</th>
                                                 <th>Status</th>
                                                 <th>Prazo</th>
                                             </tr>
