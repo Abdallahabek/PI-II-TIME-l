@@ -2,14 +2,25 @@
 // Rota GET /demandas com visibilidade por perfil, filtros combinados, busca e ordenacao
 
 import { Router, Request, Response } from 'express';
-import { ErroBancoIndisponivel, executarQuery } from '../config/database';
+import { ehErroConexaoOracle, executarQuery } from '../config/database';
 import { autenticarToken } from '../middlewares/auth';
 import { Demanda, PrioridadeDemanda, StatusDemanda, TipoDemanda } from '../types';
 
 const router = Router();
 
+const MENSAGEM_BANCO_INDISPONIVEL = 'Serviço de banco de dados indisponível no momento.';
+const ACENTOS_ORIGEM = 'áàâãäéèêëíìîïóòôõöúùûüç';
+const ACENTOS_DESTINO = 'aaaaaeeeeiiiiooooouuuuc';
+
 function normalizarTexto(valor: string): string {
     return valor.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+// Normaliza acentos e escapa curingas do operador LIKE (\, %, _) para busca textual segura
+function prepararTermoBusca(valor: string): string {
+    const semAcentos = normalizarTexto(valor);
+    const escapado = semAcentos.replace(/[\\%_]/g, '\\$&');
+    return `%${escapado}%`;
 }
 
 const MAPA_STATUS: Record<string, StatusDemanda> = {
@@ -61,7 +72,7 @@ function lerIdPositivo(valor: string): number | null {
         return null;
     }
     const numero = Number(valor);
-    return numero > 0 ? numero : null;
+    return Number.isSafeInteger(numero) && numero > 0 ? numero : null;
 }
 
 router.get('/', autenticarToken, async (req: Request, res: Response) => {
@@ -122,31 +133,37 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
 
         const responsavelParam = lerParametro(req.query.responsavelId);
         if (responsavelParam) {
-            const responsavelId = lerIdPositivo(responsavelParam);
-            if (responsavelId === null) {
-                res.status(400).json({ erro: true, mensagem: 'O responsavelId informado e invalido.' });
-                return;
+            if (responsavelParam.toLowerCase() === 'sem_responsavel') {
+                condicoes.push('d.responsavel_id IS NULL');
+            } else {
+                const responsavelId = lerIdPositivo(responsavelParam);
+                if (responsavelId === null) {
+                    res.status(400).json({ erro: true, mensagem: 'O responsavelId informado é inválido.' });
+                    return;
+                }
+                condicoes.push('d.responsavel_id = :responsavelId');
+                binds.responsavelId = responsavelId;
             }
-            condicoes.push('d.responsavel_id = :responsavelId');
-            binds.responsavelId = responsavelId;
         }
 
         const projetoParam = lerParametro(req.query.projetoId);
         if (projetoParam) {
             const projetoId = lerIdPositivo(projetoParam);
             if (projetoId === null) {
-                res.status(400).json({ erro: true, mensagem: 'O projetoId informado e invalido.' });
+                res.status(400).json({ erro: true, mensagem: 'O projetoId informado é inválido.' });
                 return;
             }
             condicoes.push('d.projeto_id = :projetoId');
             binds.projetoId = projetoId;
         }
 
-        // Busca textual case-insensitive por titulo ou descricao
+        // Busca textual case-insensitive e sem sensibilidade a acentos por titulo ou descricao
         const busca = lerParametro(req.query.busca);
         if (busca) {
-            condicoes.push('(LOWER(d.titulo) LIKE :busca OR LOWER(d.descricao) LIKE :busca)');
-            binds.busca = `%${busca.toLowerCase()}%`;
+            condicoes.push(
+                `(TRANSLATE(LOWER(d.titulo), '${ACENTOS_ORIGEM}', '${ACENTOS_DESTINO}') LIKE :busca ESCAPE '\\' OR TRANSLATE(LOWER(d.descricao), '${ACENTOS_ORIGEM}', '${ACENTOS_DESTINO}') LIKE :busca ESCAPE '\\')`
+            );
+            binds.busca = prepararTermoBusca(busca);
         }
 
         const ordenarParam = normalizarTexto(lerParametro(req.query.ordenarPor) || 'dataCriacao');
@@ -154,13 +171,21 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
         if (!expressaoOrdem) {
             res.status(400).json({
                 erro: true,
-                mensagem: 'Ordenacao invalida. Valores aceitos: prioridade, dataCriacao, prazoFinalizacao, status.'
+                mensagem: 'Ordenação inválida. Valores aceitos: prioridade, dataCriacao, prazoFinalizacao, status.'
             });
             return;
         }
 
         const ordemParam = lerParametro(req.query.ordem).toUpperCase();
-        const direcao = ordemParam === 'ASC' || ordemParam === 'DESC' ? ordemParam : DIRECAO_PADRAO[ordenarParam];
+        if (ordemParam && ordemParam !== 'ASC' && ordemParam !== 'DESC') {
+            res.status(400).json({
+                erro: true,
+                mensagem: 'Direção de ordenação inválida. Valores aceitos: ASC, DESC.'
+            });
+            return;
+        }
+        const direcao: 'ASC' | 'DESC' =
+            ordemParam === 'ASC' || ordemParam === 'DESC' ? ordemParam : DIRECAO_PADRAO[ordenarParam];
 
         const where = condicoes.length ? `WHERE ${condicoes.join(' AND ')}` : '';
 
@@ -199,8 +224,9 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
             demandas
         });
     } catch (erro) {
-        if (erro instanceof ErroBancoIndisponivel) {
-            res.status(503).json({ erro: true, mensagem: erro.message });
+        if (ehErroConexaoOracle(erro)) {
+            console.error('Banco indisponivel ao listar demandas:', erro);
+            res.status(503).json({ erro: true, mensagem: MENSAGEM_BANCO_INDISPONIVEL });
             return;
         }
         console.error('Erro ao listar demandas:', erro);
