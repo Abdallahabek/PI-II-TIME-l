@@ -23,6 +23,7 @@ import cadastroDemandasRoutes from './routes/cadastroDemandas.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import listagemDemandasRoutes from './routes/listagemDemandas.routes';
 import detalhesRoutes from './routes/detalhesRoutes';
+import { registrarSwagger } from './openapi';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,9 @@ app.get('/', (_req: Request, res: Response) => {
         authConfigurado: authSecretConfigurado()
     });
 });
+
+// Documentacao interativa Swagger UI (/api-docs) e especificacao OpenAPI (/openapi.json)
+registrarSwagger(app);
 
 // Rotas principais registradas na API
 app.use('/', authRoutes);
@@ -174,6 +178,7 @@ async function iniciarServidor() {
     });
 }
 
-iniciarServidor();
+if (require.main === module) iniciarServidor();
 
 export default app;
+

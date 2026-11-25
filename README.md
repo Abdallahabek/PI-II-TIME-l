@@ -20,7 +20,7 @@ Sistema web para gerenciamento e acompanhamento de demandas de software (tarefas
 | **Abdallah Ali Borges El Khatib** | Estrutura Oracle/SQL, segurança de autenticação (`scrypt` + HMAC em `POST /login` e `GET /usuarios`), `GET /projetos`, `POST /demandas`, `PUT /demandas/:id`, `GET /dashboard`, validação de feriados nacionais, serviço de histórico e telas de Login, Painel, Cadastro/Edição e Perfil | Implementado |
 | **Vinícius Morais** | Rotas `GET /demandas` (filtros, busca sem acento e ordenação), `GET /demandas/:id`, comentários (`GET`/`POST`), ciclo de vida (`PATCH /demandas/:id/status`), cancelamento (`PATCH /demandas/:id/cancelar`), `GET /demandas/:id/historico` e integração das telas de Listagem e Detalhes | Implementado |
 | **Enrico Pacheco Del Manto** | Estrutura inicial da tela de detalhes (etapas anteriores) | - |
-| **Lucas Ruman** | Listagem de demandas (atribuição inicial) | - |
+| **Lucas Ruman** | Documentação interativa Swagger/OpenAPI (`/api-docs` e `/openapi.json`), suíte de testes automatizados de endpoints (`npm test`) e filtros avançados/multi-ordenação na listagem de demandas | Implementado |
 
 ---
 
@@ -60,7 +60,10 @@ PI-II-TIME-1/
 │   │   └── historicoService.ts          # Registro automatico e imutavel em historico_alteracoes (UTC)
 │   ├── types/
 │   │   └── index.ts                     # Tipos e interfaces compartilhadas
-│   └── server.ts                        # Servidor Express, CORS, tratamento de erros e shutdown gracioso
+│   ├── openapi.ts                       # Especificacao OpenAPI 3.0.3 e interface Swagger UI (/api-docs)
+│   └── server.ts                        # Servidor Express, CORS, Swagger, tratamento de erros e shutdown gracioso
+├── tests/
+│   └── api.test.ts                      # Suite automatizada de testes HTTP dos endpoints e do Swagger
 ├── css/
 │   └── style.css                        # Estilos compartilhados das telas
 ├── js/
@@ -129,7 +132,13 @@ npm run build
 npm start
 ```
 
-A API ficará disponível em `http://localhost:3000`.
+Atalhos adicionais de execução, documentação e testes:
+* **`npm test`**: executa a suíte automatizada de testes HTTP (`tests/api.test.ts`, com `node:test` nativo, sem depender de Oracle).
+* **`npm run swagger`**: inicia um servidor standalone apenas para consulta da documentação interativa Swagger UI (`http://localhost:3000/api-docs` e `http://localhost:3000/openapi.json`), sem precisar do Oracle.
+* **`npm run start:com-testes`**: roda `npm test`, compila (`npm run build`) e inicia a API + Swagger somente se todos os testes passarem.
+* **`npm run start:sem-testes`**: compila (`npm run build`) e inicia a API + Swagger diretamente.
+
+Com o servidor rodando, a API fica disponível em `http://localhost:3000`, a interface Swagger UI em `http://localhost:3000/api-docs` e o contrato OpenAPI em `http://localhost:3000/openapi.json`.
 
 ### 6. Executar o frontend
 Abra `Front_telalogin.html` no navegador (recomendado usar a extensão Live Server no VS Code) com a API rodando em `http://localhost:3000`.
