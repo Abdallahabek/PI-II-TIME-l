@@ -14,19 +14,36 @@ async function initConfiguracoes() {
     document.getElementById('perfilEmail').value = usuario.email || '';
     document.getElementById('perfilTipo').value = usuario.perfil || '';
 
+    const tituloProjetos = document.getElementById('tituloProjetosUsuario');
+    if (tituloProjetos && usuario.perfil === 'Administrador') {
+        tituloProjetos.innerHTML = '<i class="fa-solid fa-folder-open me-2"></i> Projetos Acessíveis (Visão Global de Administrador)';
+    }
+
     const lista = document.getElementById('listaProjetosUsuario');
     if (!lista) {
         return;
     }
 
     try {
-        const { ok, dados } = await apiFetch('/projetos');
+        const { ok, redirecionado, dados } = await apiFetch('/projetos');
+        if (redirecionado) {
+            return;
+        }
+
         lista.textContent = '';
 
-        if (!ok || !dados.projetos || dados.projetos.length === 0) {
+        if (!ok) {
+            const li = document.createElement('li');
+            li.className = 'list-group-item text-danger';
+            li.textContent = dados.mensagem || 'Não foi possível consultar os projetos no servidor.';
+            lista.appendChild(li);
+            return;
+        }
+
+        if (!dados.projetos || dados.projetos.length === 0) {
             const li = document.createElement('li');
             li.className = 'list-group-item text-muted';
-            li.textContent = dados.mensagem || 'Nenhum projeto vinculado.';
+            li.textContent = 'Nenhum projeto vinculado.';
             lista.appendChild(li);
             return;
         }
@@ -34,14 +51,15 @@ async function initConfiguracoes() {
         dados.projetos.forEach(p => {
             const li = document.createElement('li');
             li.className = 'list-group-item';
-            li.textContent = `${p.nome} - ${p.descricao}`;
+            const sufixoData = p.dataCriacao ? ` (criado em ${Auth.formatarData(p.dataCriacao)})` : '';
+            li.textContent = `${p.nome} - ${p.descricao || 'Sem descrição'}${sufixoData}`;
             lista.appendChild(li);
         });
     } catch {
         lista.textContent = '';
         const li = document.createElement('li');
         li.className = 'list-group-item text-danger';
-        li.textContent = 'Nao foi possivel consultar os projetos no servidor.';
+        li.textContent = 'Não foi possível consultar os projetos no servidor.';
         lista.appendChild(li);
     }
 }

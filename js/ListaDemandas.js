@@ -27,14 +27,6 @@ function escaparHtml(valor) {
         .replace(/'/g, '&#39;');
 }
 
-function formatarData(valor) {
-    if (!valor) {
-        return '-';
-    }
-    const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
-    return `${dia}/${mes}/${ano}`;
-}
-
 document.addEventListener('DOMContentLoaded', function () {
     const usuario = verificarAutenticacao();
     if (!usuario) {
@@ -44,6 +36,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const podeGerenciar = PERFIS_GESTAO.includes(usuario.perfil);
     const tabela = document.getElementById('tabelaDemandas');
+    const alertaSucesso = document.getElementById('alertaSucesso');
+    const alertaFiltros = document.getElementById('alertaFiltros');
     const alertaErro = document.getElementById('alertaErro');
     const totalDemandas = document.getElementById('totalDemandas');
     const campoBusca = document.getElementById('searchInput');
@@ -63,6 +57,14 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('btnNovaDemanda').classList.remove('d-none');
     }
 
+    // Exibe mensagem de sucesso apos criacao/edicao e limpa o sessionStorage
+    const msgSucesso = sessionStorage.getItem('mensagemSucessoDemanda');
+    if (msgSucesso && alertaSucesso) {
+        alertaSucesso.textContent = msgSucesso;
+        alertaSucesso.classList.remove('d-none');
+        sessionStorage.removeItem('mensagemSucessoDemanda');
+    }
+
     function exibirErro(mensagem) {
         alertaErro.textContent = mensagem;
         alertaErro.classList.remove('d-none');
@@ -71,6 +73,21 @@ document.addEventListener('DOMContentLoaded', function () {
     function ocultarErro() {
         alertaErro.textContent = '';
         alertaErro.classList.add('d-none');
+    }
+
+    function exibirErroFiltros(mensagem) {
+        if (!alertaFiltros) {
+            return;
+        }
+        alertaFiltros.textContent = mensagem;
+        alertaFiltros.classList.remove('d-none');
+    }
+
+    function cancelarDebounceBusca() {
+        if (temporizadorBusca !== null) {
+            clearTimeout(temporizadorBusca);
+            temporizadorBusca = null;
+        }
     }
 
     function renderizarMensagemTabela(texto) {
@@ -94,26 +111,32 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         demandas.forEach(demanda => {
+            const idSeguro = escaparHtml(demanda.id);
+            const idUrl = encodeURIComponent(demanda.id);
             const podeEditar = podeGerenciar && demanda.status !== 'Concluída' && demanda.status !== 'Cancelada';
             const botaoEditar = podeEditar
-                ? `<a href="tela_nova_demanda.html?id=${demanda.id}" class="btn btn-sm btn-outline-primary" title="Editar">
+                ? `<a href="tela_nova_demanda.html?id=${idUrl}" class="btn btn-sm btn-outline-primary" title="Editar">
                        <i class="fa-solid fa-pen"></i>
                    </a>`
                 : '';
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${demanda.id}</td>
-                <td>${escaparHtml(demanda.titulo)}</td>
+                <td>${idSeguro}</td>
+                <td>
+                    <a href="Tela_detalhes_demanda.html?id=${idUrl}" class="text-decoration-none fw-medium">
+                        ${escaparHtml(demanda.titulo)}
+                    </a>
+                </td>
                 <td>${escaparHtml(demanda.tipo)}</td>
                 <td>${escaparHtml(demanda.projetoNome)}</td>
                 <td>${escaparHtml(demanda.responsavelNome || 'Sem responsável')}</td>
                 <td><span class="badge ${CORES_STATUS[demanda.status] || 'bg-light text-dark'}">${escaparHtml(demanda.status)}</span></td>
                 <td><span class="${CORES_PRIORIDADE[demanda.prioridade] || ''}">${escaparHtml(demanda.prioridade)}</span></td>
-                <td>${formatarData(demanda.dataCriacao)}</td>
-                <td>${formatarData(demanda.prazoFinalizacao)}</td>
+                <td>${escaparHtml(Auth.formatarData(demanda.dataCriacao))}</td>
+                <td>${escaparHtml(Auth.formatarData(demanda.prazoFinalizacao))}</td>
                 <td class="text-nowrap">
-                    <a href="Tela_detalhes_demanda.html?id=${demanda.id}" class="btn btn-sm btn-outline-secondary me-1" title="Ver Detalhes">
+                    <a href="Tela_detalhes_demanda.html?id=${idUrl}" class="btn btn-sm btn-outline-secondary me-1" title="Ver Detalhes">
                         <i class="fa-solid fa-eye"></i>
                     </a>
                     ${botaoEditar}
@@ -146,8 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
         totalDemandas.textContent = '';
 
         try {
-            const { ok, dados } = await apiFetch(`/demandas?${montarQueryString()}`);
-            if (numeroRequisicao !== requisicaoAtual) {
+            const { ok, redirecionado, dados } = await apiFetch(`/demandas?${montarQueryString()}`);
+            if (redirecionado || numeroRequisicao !== requisicaoAtual) {
                 return;
             }
             if (!ok) {
@@ -176,11 +199,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Carrega listas de projetos e usuarios para popular os filtros dinamicamente
     async function carregarOpcoesFiltros() {
+        // Inclui a opcao de demandas sem responsavel antes da carga da API
+        const optSemResp = document.createElement('option');
+        optSemResp.value = 'sem_responsavel';
+        optSemResp.textContent = 'Sem responsável';
+        filtros.responsavelId.appendChild(optSemResp);
+
         try {
             const [respProjetos, respUsuarios] = await Promise.all([
                 apiFetch('/projetos'),
                 apiFetch('/usuarios')
             ]);
+            if (respProjetos.redirecionado || respUsuarios.redirecionado) {
+                return;
+            }
             if (respProjetos.ok) {
                 preencherSelect(filtros.projetoId, respProjetos.dados.projetos || []);
             }
@@ -188,22 +220,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 preencherSelect(filtros.responsavelId, respUsuarios.dados.usuarios || []);
             }
             if (!respProjetos.ok || !respUsuarios.ok) {
-                exibirErro('Não foi possível carregar todas as opções de filtro.');
+                exibirErroFiltros('Não foi possível carregar todas as opções de filtro.');
             }
         } catch (erro) {
-            exibirErro(erro.message || 'Não foi possível carregar as opções de filtro.');
+            exibirErroFiltros(erro.message || 'Não foi possível carregar as opções de filtro.');
         }
     }
 
     campoBusca.addEventListener('input', function () {
-        clearTimeout(temporizadorBusca);
-        temporizadorBusca = setTimeout(carregarDemandas, 400);
+        cancelarDebounceBusca();
+        temporizadorBusca = setTimeout(function () {
+            temporizadorBusca = null;
+            carregarDemandas();
+        }, 400);
     });
 
-    Object.values(filtros).forEach(campo => campo.addEventListener('change', carregarDemandas));
-    campoOrdenacao.addEventListener('change', carregarDemandas);
+    Object.values(filtros).forEach(campo =>
+        campo.addEventListener('change', function () {
+            cancelarDebounceBusca();
+            carregarDemandas();
+        })
+    );
+
+    campoOrdenacao.addEventListener('change', function () {
+        cancelarDebounceBusca();
+        carregarDemandas();
+    });
 
     document.getElementById('btnLimparFiltros').addEventListener('click', function () {
+        cancelarDebounceBusca();
         campoBusca.value = '';
         Object.values(filtros).forEach(campo => {
             campo.value = '';

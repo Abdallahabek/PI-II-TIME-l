@@ -43,6 +43,10 @@ export interface Demanda {
     prazoFinalizacao: string | null;
 }
 
+export interface DemandaProximaPrazo extends Demanda {
+    vencida: boolean;
+}
+
 export interface Comentario {
     id: number;
     demandaId: number;
@@ -70,7 +74,7 @@ export interface ResumoDashboard {
     porPrioridade: Record<PrioridadeDemanda, number>;
     porTipo: Record<TipoDemanda, number>;
     demandasCriticasEmAberto: Demanda[];
-    demandasProximasPrazo: Demanda[];
+    demandasProximasPrazo: DemandaProximaPrazo[];
     criterios: {
         emAberto: string;
         proximasDoPrazo: string;

@@ -40,6 +40,8 @@ const CORES_PRIORIDADE = {
 
 const NOMES_CAMPOS = {
     status: 'Status',
+    projeto: 'Projeto',
+    projetoId: 'Projeto',
     responsavel: 'Responsável',
     prioridade: 'Prioridade',
     prazoFinalizacao: 'Prazo de finalização'
@@ -47,21 +49,14 @@ const NOMES_CAMPOS = {
 
 const TAMANHO_MAXIMO_COMENTARIO = 1000;
 
-function formatarData(valor) {
+function formatarValorHistorico(campo, valor) {
     if (!valor) {
         return '-';
     }
-    const [ano, mes, dia] = String(valor).slice(0, 10).split('-');
-    return `${dia}/${mes}/${ano}`;
-}
-
-function formatarDataHora(valor) {
-    if (!valor) {
-        return '-';
+    if (campo === 'prazoFinalizacao' && /^\d{4}-\d{2}-\d{2}/.test(String(valor))) {
+        return Auth.formatarData(valor);
     }
-    const texto = String(valor);
-    const hora = texto.length >= 16 ? texto.slice(11, 16) : '';
-    return hora ? `${formatarData(texto)} ${hora}` : formatarData(texto);
+    return valor;
 }
 
 function criarCelula(texto) {
@@ -79,9 +74,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const alertaErro = document.getElementById('alertaErro');
     const alertaSucesso = document.getElementById('alertaSucesso');
+    const estadoCarregando = document.getElementById('estadoCarregando');
     const cardDetalhes = document.getElementById('cardDetalhes');
     const containerAcoes = document.getElementById('acoes-status');
     const listaComentarios = document.getElementById('listaComentarios');
+    const avisoComentariosBloqueados = document.getElementById('avisoComentariosBloqueados');
     const tabelaHistorico = document.getElementById('detalhe-historico');
     const formComentario = document.getElementById('formComentario');
     const campoComentario = document.getElementById('textoComentario');
@@ -91,6 +88,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const idUrl = new URLSearchParams(window.location.search).get('id');
     let demanda = null;
+
+    function ocultarCarregando() {
+        if (estadoCarregando) {
+            estadoCarregando.classList.add('d-none');
+        }
+    }
 
     function exibirErro(mensagem) {
         alertaSucesso.classList.add('d-none');
@@ -115,6 +118,39 @@ document.addEventListener('DOMContentLoaded', function () {
         return status ? `Erro ${status}: ${mensagem}` : mensagem;
     }
 
+    function exibirErroListaComentarios(mensagem) {
+        listaComentarios.textContent = '';
+        const alerta = document.createElement('div');
+        alerta.className = 'alert alert-danger py-2 px-3 small mb-0';
+        alerta.setAttribute('role', 'alert');
+        alerta.textContent = mensagem;
+        listaComentarios.appendChild(alerta);
+    }
+
+    function demandaFinalizada() {
+        return Boolean(demanda && (demanda.status === 'Concluída' || demanda.status === 'Cancelada'));
+    }
+
+    // Oculta e desabilita o formulario de comentarios quando a demanda estiver encerrada
+    function atualizarEstadoComentarios() {
+        const finalizada = demandaFinalizada();
+        if (finalizada) {
+            formComentario.classList.add('d-none');
+            campoComentario.disabled = true;
+            btnEnviarComentario.disabled = true;
+            if (avisoComentariosBloqueados) {
+                avisoComentariosBloqueados.classList.remove('d-none');
+            }
+        } else {
+            formComentario.classList.remove('d-none');
+            campoComentario.disabled = false;
+            btnEnviarComentario.disabled = false;
+            if (avisoComentariosBloqueados) {
+                avisoComentariosBloqueados.classList.add('d-none');
+            }
+        }
+    }
+
     function renderizarDetalhes() {
         document.getElementById('detalhe-titulo').textContent = `#${demanda.id} - ${demanda.titulo}`;
         document.getElementById('detalhe-projeto').textContent = demanda.projetoNome || '-';
@@ -128,13 +164,17 @@ document.addEventListener('DOMContentLoaded', function () {
         elStatus.textContent = demanda.status;
         elStatus.className = `badge ${CORES_STATUS[demanda.status] || 'bg-light text-dark'}`;
 
-        document.getElementById('detalhe-criacao').textContent = formatarDataHora(demanda.dataCriacao);
-        document.getElementById('detalhe-atualizacao').textContent = formatarDataHora(demanda.dataAtualizacao);
-        document.getElementById('detalhe-prazo').textContent = demanda.prazoFinalizacao ? formatarData(demanda.prazoFinalizacao) : 'Sem prazo definido';
+        document.getElementById('detalhe-criacao').textContent = Auth.formatarDataHora(demanda.dataCriacao);
+        document.getElementById('detalhe-atualizacao').textContent = Auth.formatarDataHora(demanda.dataAtualizacao);
+        document.getElementById('detalhe-prazo').textContent = demanda.prazoFinalizacao
+            ? Auth.formatarData(demanda.prazoFinalizacao)
+            : 'Sem prazo definido';
         document.getElementById('detalhe-responsavel').textContent = demanda.responsavelNome || 'Sem responsável';
         document.getElementById('detalhe-descricao').textContent = demanda.descricao;
 
         renderizarBotoes();
+        atualizarEstadoComentarios();
+        ocultarCarregando();
         cardDetalhes.classList.remove('d-none');
     }
 
@@ -161,7 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderizarBotoes() {
         containerAcoes.innerHTML = '';
-        const finalizada = demanda.status === 'Concluída' || demanda.status === 'Cancelada';
+        const finalizada = demandaFinalizada();
 
         transicoesDisponiveis().forEach(novoStatus => {
             const config = BOTOES_TRANSICAO[`${demanda.status}>${novoStatus}`];
@@ -175,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (PERFIS_GESTAO.includes(usuario.perfil) && !finalizada) {
             const linkEditar = document.createElement('a');
-            linkEditar.href = `tela_nova_demanda.html?id=${demanda.id}`;
+            linkEditar.href = `tela_nova_demanda.html?id=${encodeURIComponent(demanda.id)}`;
             linkEditar.className = 'btn btn-sm btn-outline-primary';
             linkEditar.innerHTML = '<i class="fa-solid fa-pen"></i> Editar';
             containerAcoes.appendChild(linkEditar);
@@ -193,35 +233,47 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function definirBotoesDesabilitados(desabilitar) {
+    function definirAcoesCarregando(carregando) {
         containerAcoes.querySelectorAll('button').forEach(botao => {
-            botao.disabled = desabilitar;
+            botao.disabled = carregando;
+        });
+        containerAcoes.querySelectorAll('a').forEach(link => {
+            link.classList.toggle('disabled', carregando);
+            link.setAttribute('aria-disabled', carregando ? 'true' : 'false');
         });
     }
 
-    // Executa mudanca de status ou cancelamento via PATCH e recarrega o historico
+    // Executa mudanca de status via PATCH e recarrega detalhes automaticamente em caso de 409
     async function alterarStatus(novoStatus) {
         if (!confirm(`Alterar o status de "${demanda.status}" para "${novoStatus}"?`)) {
             return;
         }
-        definirBotoesDesabilitados(true);
+        definirAcoesCarregando(true);
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${demanda.id}/status`, {
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${demanda.id}/status`, {
                 method: 'PATCH',
                 body: JSON.stringify({ status: novoStatus })
             });
+            if (redirecionado) {
+                return;
+            }
+            if (status === 409) {
+                exibirErro(mensagemErroApi(status, dados, 'A demanda foi alterada por outro usuário.'));
+                await carregarDemanda({ preservarAlerta: true });
+                return;
+            }
             if (!ok) {
                 exibirErro(mensagemErroApi(status, dados, 'Não foi possível alterar o status.'));
-                definirBotoesDesabilitados(false);
+                definirAcoesCarregando(false);
                 return;
             }
             demanda = dados.demanda;
             renderizarDetalhes();
             exibirSucesso(dados.mensagem || 'Status alterado com sucesso.');
-            carregarHistorico();
+            await carregarHistorico();
         } catch (erro) {
             exibirErro(erro.message || 'Não foi possível conectar ao servidor.');
-            definirBotoesDesabilitados(false);
+            definirAcoesCarregando(false);
         }
     }
 
@@ -229,23 +281,31 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!confirm('Tem certeza que deseja cancelar esta demanda? Esta ação não poderá ser desfeita.')) {
             return;
         }
-        definirBotoesDesabilitados(true);
+        definirAcoesCarregando(true);
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${demanda.id}/cancelar`, {
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${demanda.id}/cancelar`, {
                 method: 'PATCH'
             });
+            if (redirecionado) {
+                return;
+            }
+            if (status === 409) {
+                exibirErro(mensagemErroApi(status, dados, 'A demanda foi alterada por outro usuário.'));
+                await carregarDemanda({ preservarAlerta: true });
+                return;
+            }
             if (!ok) {
                 exibirErro(mensagemErroApi(status, dados, 'Não foi possível cancelar a demanda.'));
-                definirBotoesDesabilitados(false);
+                definirAcoesCarregando(false);
                 return;
             }
             demanda = dados.demanda;
             renderizarDetalhes();
             exibirSucesso(dados.mensagem || 'Demanda cancelada com sucesso.');
-            carregarHistorico();
+            await carregarHistorico();
         } catch (erro) {
             exibirErro(erro.message || 'Não foi possível conectar ao servidor.');
-            definirBotoesDesabilitados(false);
+            definirAcoesCarregando(false);
         }
     }
 
@@ -272,7 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
             autor.textContent = comentario.usuarioNome;
             const data = document.createElement('small');
             data.className = 'text-muted ms-2';
-            data.textContent = formatarDataHora(comentario.dataCriacao);
+            data.textContent = Auth.formatarDataHora(comentario.dataCriacao);
             const texto = document.createElement('div');
             texto.className = 'text-muted descricao-texto';
             texto.style.fontSize = '0.9rem';
@@ -287,14 +347,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function carregarComentarios() {
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${demanda.id}/comentarios`);
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${demanda.id}/comentarios`);
+            if (redirecionado) {
+                return;
+            }
             if (!ok) {
-                listaComentarios.textContent = mensagemErroApi(status, dados, 'Não foi possível carregar os comentários.');
+                exibirErroListaComentarios(mensagemErroApi(status, dados, 'Não foi possível carregar os comentários.'));
                 return;
             }
             renderizarComentarios(dados.comentarios || []);
         } catch (erro) {
-            listaComentarios.textContent = erro.message || 'Não foi possível carregar os comentários.';
+            exibirErroListaComentarios(erro.message || 'Não foi possível carregar os comentários.');
         }
     }
 
@@ -313,11 +376,11 @@ document.addEventListener('DOMContentLoaded', function () {
         registros.forEach(registro => {
             const tr = document.createElement('tr');
             tr.append(
-                criarCelula(formatarDataHora(registro.dataAlteracao)),
+                criarCelula(Auth.formatarDataHora(registro.dataAlteracao)),
                 criarCelula(registro.usuarioNome),
                 criarCelula(NOMES_CAMPOS[registro.campoAlterado] || registro.campoAlterado),
-                criarCelula(registro.valorAnterior || '-'),
-                criarCelula(registro.valorNovo),
+                criarCelula(formatarValorHistorico(registro.campoAlterado, registro.valorAnterior)),
+                criarCelula(formatarValorHistorico(registro.campoAlterado, registro.valorNovo)),
                 criarCelula(registro.descricao)
             );
             tabelaHistorico.appendChild(tr);
@@ -326,7 +389,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     async function carregarHistorico() {
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${demanda.id}/historico`);
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${demanda.id}/historico`);
+            if (redirecionado) {
+                return;
+            }
             if (!ok) {
                 tabelaHistorico.innerHTML = '';
                 const tr = document.createElement('tr');
@@ -366,18 +432,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
     formComentario.addEventListener('submit', async function (evento) {
         evento.preventDefault();
+        if (!demanda || demandaFinalizada()) {
+            return;
+        }
         if (!validarComentario()) {
             return;
         }
         btnEnviarComentario.disabled = true;
+        campoComentario.disabled = true;
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${demanda.id}/comentarios`, {
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${demanda.id}/comentarios`, {
                 method: 'POST',
                 body: JSON.stringify({ texto: campoComentario.value.trim() })
             });
+            if (redirecionado) {
+                return;
+            }
+            if (status === 409) {
+                exibirErro(mensagemErroApi(status, dados, 'A demanda foi alterada por outro usuário.'));
+                await carregarDemanda({ preservarAlerta: true });
+                return;
+            }
             if (!ok) {
-                erroComentario.textContent = mensagemErroApi(status, dados, 'Não foi possível enviar o comentário.');
+                const msg = mensagemErroApi(status, dados, 'Não foi possível enviar o comentário.');
+                erroComentario.textContent = msg;
                 campoComentario.classList.add('is-invalid');
+                if (status === 400) {
+                    await carregarDemanda({ preservarAlerta: true });
+                    if (demandaFinalizada()) {
+                        exibirErro(msg);
+                    }
+                }
                 return;
             }
             campoComentario.value = '';
@@ -388,31 +473,48 @@ document.addEventListener('DOMContentLoaded', function () {
             erroComentario.textContent = erro.message || 'Não foi possível conectar ao servidor.';
             campoComentario.classList.add('is-invalid');
         } finally {
-            btnEnviarComentario.disabled = false;
+            if (!demandaFinalizada()) {
+                btnEnviarComentario.disabled = false;
+                campoComentario.disabled = false;
+            }
         }
     });
 
-    async function iniciar() {
-        if (!idUrl || !/^\d+$/.test(idUrl)) {
+    async function carregarDemanda({ preservarAlerta = false } = {}) {
+        if (!idUrl || !/^\d+$/.test(idUrl) || Number(idUrl) <= 0) {
+            ocultarCarregando();
             exibirErro('Nenhuma demanda válida foi selecionada. Volte para a listagem e escolha uma demanda.');
             return;
         }
 
         try {
-            const { ok, status, dados } = await apiFetch(`/demandas/${idUrl}`);
+            const { ok, status, redirecionado, dados } = await apiFetch(`/demandas/${idUrl}`);
+            if (redirecionado) {
+                return;
+            }
             if (!ok) {
+                ocultarCarregando();
                 exibirErro(mensagemErroApi(status, dados, 'Não foi possível carregar a demanda.'));
                 return;
             }
-            ocultarAlertas();
+            if (!preservarAlerta) {
+                ocultarAlertas();
+            }
             demanda = dados.demanda;
             renderizarDetalhes();
-            carregarComentarios();
-            carregarHistorico();
+
+            const msgSucesso = sessionStorage.getItem('mensagemSucessoDemanda');
+            if (msgSucesso) {
+                exibirSucesso(msgSucesso);
+                sessionStorage.removeItem('mensagemSucessoDemanda');
+            }
+
+            await Promise.all([carregarComentarios(), carregarHistorico()]);
         } catch (erro) {
+            ocultarCarregando();
             exibirErro(erro.message || 'Não foi possível conectar ao servidor.');
         }
     }
 
-    iniciar();
+    carregarDemanda();
 });

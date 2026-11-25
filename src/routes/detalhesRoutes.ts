@@ -3,7 +3,7 @@
 
 import { Router, Request, Response } from 'express';
 import oracledb from 'oracledb';
-import { comTransacao, ErroBancoIndisponivel, executarQuery } from '../config/database';
+import { comTransacao, ehErroConexaoOracle, executarQuery } from '../config/database';
 import { autenticarToken, exigirPerfis, usuarioTemAcessoAoProjeto } from '../middlewares/auth';
 import { registrarHistorico } from '../services/historicoService';
 import { Comentario, Demanda, HistoricoAlteracao, StatusDemanda, UsuarioPublico } from '../types';
@@ -11,6 +11,7 @@ import { Comentario, Demanda, HistoricoAlteracao, StatusDemanda, UsuarioPublico 
 const router = Router();
 
 const TAMANHO_MAXIMO_COMENTARIO = 1000;
+const MENSAGEM_BANCO_INDISPONIVEL = 'Serviço de banco de dados indisponível no momento.';
 
 const SQL_BUSCAR_DEMANDA = `
     SELECT d.id AS "id",
@@ -63,7 +64,7 @@ function lerIdDemanda(valor: string): number | null {
         return null;
     }
     const numero = Number(valor);
-    return numero > 0 ? numero : null;
+    return Number.isSafeInteger(numero) && numero > 0 ? numero : null;
 }
 
 function mapearDemanda(row: Demanda): Demanda {
@@ -108,8 +109,9 @@ async function carregarDemandaComAcesso(idUrl: string, usuario: UsuarioPublico):
 }
 
 function tratarErro(res: Response, erro: unknown, contexto: string): void {
-    if (erro instanceof ErroBancoIndisponivel) {
-        res.status(503).json({ erro: true, mensagem: erro.message });
+    if (ehErroConexaoOracle(erro)) {
+        console.error(`Banco indisponivel ao ${contexto}:`, erro);
+        res.status(503).json({ erro: true, mensagem: MENSAGEM_BANCO_INDISPONIVEL });
         return;
     }
     console.error(`Erro ao ${contexto}:`, erro);
@@ -174,6 +176,16 @@ router.post('/:id/comentarios', autenticarToken, async (req: Request, res: Respo
             return;
         }
 
+        // Bloqueia novos comentarios em demandas encerradas (Concluida ou Cancelada)
+        const demanda = carregamento.demanda;
+        if (demanda.status === 'Concluída' || demanda.status === 'Cancelada') {
+            res.status(400).json({
+                erro: true,
+                mensagem: 'Não é possível adicionar comentários em demandas concluídas ou canceladas.'
+            });
+            return;
+        }
+
         const corpo = (req.body || {}) as Record<string, unknown>;
         const texto = typeof corpo.texto === 'string' ? corpo.texto.trim() : '';
         if (texto === '') {
@@ -189,11 +201,11 @@ router.post('/:id/comentarios', autenticarToken, async (req: Request, res: Respo
         }
 
         const resultado = await executarQuery<{ id: number[] }>(
-            `INSERT INTO comentarios (demanda_id, usuario_id, texto)
-             VALUES (:demandaId, :usuarioId, :texto)
+            `INSERT INTO comentarios (demanda_id, usuario_id, texto, data_criacao)
+             VALUES (:demandaId, :usuarioId, :texto, SYS_EXTRACT_UTC(SYSTIMESTAMP))
              RETURNING id INTO :id`,
             {
-                demandaId: carregamento.demanda.id,
+                demandaId: demanda.id,
                 usuarioId: usuario.id,
                 texto,
                 id: { dir: oracledb.BIND_OUT, type: oracledb.NUMBER }
@@ -278,7 +290,7 @@ async function aplicarNovoStatus(
         const atualizacao = await conn.execute(
             `UPDATE demandas
                 SET status = :novoStatus,
-                    data_atualizacao = CURRENT_TIMESTAMP
+                    data_atualizacao = SYS_EXTRACT_UTC(SYSTIMESTAMP)
               WHERE id = :id
                 AND status = :statusAtual`,
             { novoStatus, id: demanda.id, statusAtual: demanda.status }
