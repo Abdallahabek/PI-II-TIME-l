@@ -2,7 +2,11 @@
 // Rota GET /projetos filtrada pelo perfil do usuario autenticado
 
 import { Router, Request, Response } from 'express';
-import { ErroBancoIndisponivel, executarQuery } from '../config/database';
+import {
+    ehErroConexaoOracle,
+    executarQuery,
+    MENSAGEM_BANCO_INDISPONIVEL
+} from '../config/database';
 import { autenticarToken } from '../middlewares/auth';
 import { Projeto } from '../types';
 
@@ -43,8 +47,9 @@ router.get('/', autenticarToken, async (req: Request, res: Response) => {
             projetos
         });
     } catch (erro) {
-        if (erro instanceof ErroBancoIndisponivel) {
-            res.status(503).json({ erro: true, mensagem: erro.message });
+        if (ehErroConexaoOracle(erro)) {
+            console.error('Erro de conexao Oracle ao listar projetos:', erro);
+            res.status(503).json({ erro: true, mensagem: MENSAGEM_BANCO_INDISPONIVEL });
             return;
         }
         console.error('Erro ao listar projetos:', erro);

@@ -13,7 +13,28 @@ export interface RegistroHistoricoInput {
     descricao: string;
 }
 
-// Insere registro de alteracao imutavel usando conexao da transacao quando informada
+const LIMITE_CAMPO = 50;
+const LIMITE_VALOR = 200;
+const LIMITE_DESCRICAO = 500;
+
+// Sanitiza textos obrigatorios evitando string vazia (tratada como NULL no Oracle) e estouro de coluna
+function normalizarObrigatorio(valor: string, limite: number, nomeCampo: string): string {
+    const limpo = typeof valor === 'string' ? valor.trim() : '';
+    if (!limpo) {
+        throw new Error(`Campo obrigatorio do historico nao pode ser vazio: ${nomeCampo}.`);
+    }
+    return limpo.slice(0, limite);
+}
+
+function normalizarOpcional(valor: string | null, limite: number): string | null {
+    if (valor === null || valor === undefined) {
+        return null;
+    }
+    const limpo = String(valor).trim();
+    return limpo ? limpo.slice(0, limite) : null;
+}
+
+// Insere registro de alteracao imutavel em UTC usando a conexao da transacao quando informada
 export async function registrarHistorico(
     dados: RegistroHistoricoInput,
     conn?: oracledb.Connection
@@ -25,24 +46,26 @@ export async function registrarHistorico(
             campo_alterado,
             valor_anterior,
             valor_novo,
-            descricao
+            descricao,
+            data_alteracao
         ) VALUES (
             :demandaId,
             :usuarioId,
             :campoAlterado,
             :valorAnterior,
             :valorNovo,
-            :descricao
+            :descricao,
+            SYS_EXTRACT_UTC(SYSTIMESTAMP)
         )
     `;
 
     const binds = {
         demandaId: dados.demandaId,
         usuarioId: dados.usuarioId,
-        campoAlterado: dados.campoAlterado,
-        valorAnterior: dados.valorAnterior,
-        valorNovo: dados.valorNovo,
-        descricao: dados.descricao
+        campoAlterado: normalizarObrigatorio(dados.campoAlterado, LIMITE_CAMPO, 'campoAlterado'),
+        valorAnterior: normalizarOpcional(dados.valorAnterior, LIMITE_VALOR),
+        valorNovo: normalizarObrigatorio(dados.valorNovo, LIMITE_VALOR, 'valorNovo'),
+        descricao: normalizarObrigatorio(dados.descricao, LIMITE_DESCRICAO, 'descricao')
     };
 
     if (conn) {
