@@ -65,7 +65,8 @@ for (const path of ['/usuarios','/projetos','/demandas','/dashboard']) {
 for (const route of rotas.filter(r => r.includes('{id}'))) {
     test(route + ' rejeita ID inválido', async () => {
         const [method,path] = route.split(' ');
-        assert.equal((await chamar(method,path.replace('{id}','abc'),{status:'Aberta'})).status,400);
+        const body = method === 'GET' ? undefined : {status:'Aberta'};
+        assert.equal((await chamar(method,path.replace('{id}','abc'),body)).status,400);
     });
 }
 test('Demanda inexistente retorna 404',async () => {
@@ -82,3 +83,24 @@ test('Cadastro rejeita dados incompletos e prazo em feriado',async () => {
 });
 test('Filtro desconhecido é rejeitado',async () => assert.equal((await chamar('GET','/demandas?prioridade=invalida')).status,400));
 
+
+test('Listagem combina filtros, busca por palavras e critérios de ordenação', async () => {
+    let consulta = '';
+    let parametros: Record<string, unknown> = {};
+    mock.method(banco, 'executarQuery', async (sql: string, binds: Record<string, unknown>) => {
+        consulta = sql;
+        parametros = binds;
+        return {rows: []};
+    });
+    const query = new URLSearchParams({
+        responsavelId: '7,9', campoData: 'LastUpdate', de: '2026-11-01', ate: '2026-11-30',
+        busca: 'ação café', acentos: 'force-ignore', palavras: 'todas', comparacao: 'prefixo',
+        buscarEm: 'titulo,descricao', ordenarPor: 'prioridade,LastUpdate', ordem: 'ASC,DESC'
+    });
+    assert.equal((await chamar('GET', '/demandas?' + query)).status, 200);
+    assert.equal(parametros.responsavelId1, 9);
+    assert.equal(parametros.busca0, 'ação%');
+    assert.equal(parametros.busca1, 'café%');
+    assert.match(consulta, /d\.data_atualizacao >= TO_DATE/);
+    assert.match(consulta, /d\.data_atualizacao DESC NULLS LAST/);
+});
